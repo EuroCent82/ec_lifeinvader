@@ -264,26 +264,25 @@ Config.VersionCheck = {
 }
 
 --------------------------------------------------------------------------------
--- 8) Blips — eine Markierung pro Standort (gruppiert auf der Karte)
+-- 8) Blips — wie ESX-Banking: gleicher label + sprite = ein Legenden-Eintrag (< 1/2 >)
 --
---    enabled = true     → jeder aktive Standort mit coords bekommt einen Blip
---    label             → Standard-Name für ALLE Standorte („gruppiert“ in der Legende)
---    category          → gleiche Kategorie = GTA fasst Blips zusammen (12–133, benannt via BLIP_CAT_*)
+--    enabled = true  → jeder aktive Standort mit coords bekommt einen Blip
+--    label          → für alle Standorte gleich lassen, dann gruppiert GTA automatisch
+--    sprite         → NICHT 77 (das ist Lesters Story-Blip „Lester“ in der Legende!)
 --
---    Pro Standort nur noch optional:
---      blipLabel = 'LifeInvader Vespucci'  → eigener Name (sonst Config.Blip.label)
---      blip = false                       → keinen Blip an diesem Standort
+--    Pro Standort optional:
+--      blipLabel = '…'  → eigener Name (bricht Gruppierung)
+--      blip = false     → kein Blip
 --------------------------------------------------------------------------------
 
 Config.Blip = {
     enabled = true,
     debug = false,
-    sprite = 77,
+    sprite = 407, -- radar_info_icon (neutral; 77 = Lester)
     color = 1,
     scale = 0.85,
     shortRange = false,
     label = 'LifeInvader',
-    category = 12,
 }
 
 --------------------------------------------------------------------------------

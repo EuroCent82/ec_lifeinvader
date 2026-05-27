@@ -6,6 +6,7 @@ EcLifeInvader.World = EcLifeInvader.World or {}
 local spawnedPeds = {}
 local spawnedObjects = {}
 local spawnedBlips = {}
+local worldSpawning = false
 
 local function debugPrint(...)
     LiBridge.Debug(...)
@@ -60,21 +61,6 @@ local function shouldShowBlip(location)
     return Config.Blip and Config.Blip.enabled == true
 end
 
-local function registerBlipCategoryLegend()
-    local defaults = Config.Blip or {}
-    local category = tonumber(defaults.category)
-    if not category or category < 12 or category > 133 then
-        return
-    end
-
-    local label = defaults.label
-    if type(label) ~= 'string' or label == '' then
-        label = 'LifeInvader'
-    end
-
-    AddTextEntry(('BLIP_CAT_%d'):format(category), label)
-end
-
 local function resolveBlipLabel(location)
     if type(location.blipLabel) == 'string' and location.blipLabel ~= '' then
         return location.blipLabel
@@ -99,13 +85,21 @@ local function resolveBlipSettings(location)
         x = x,
         y = y,
         z = z,
-        sprite = tonumber(defaults.sprite) or 77,
+        sprite = tonumber(defaults.sprite) or 407,
         color = tonumber(defaults.color) or 1,
         scale = tonumber(defaults.scale) or 0.85,
         shortRange = defaults.shortRange == true,
         label = resolveBlipLabel(location),
-        category = tonumber(defaults.category),
     }
+end
+
+local function clearSpawnedBlips()
+    for locationId, blip in pairs(spawnedBlips) do
+        if DoesBlipExist(blip) then
+            RemoveBlip(blip)
+        end
+        spawnedBlips[locationId] = nil
+    end
 end
 
 local function spawnBlip(locationId, location)
@@ -122,6 +116,12 @@ local function spawnBlip(locationId, location)
         return
     end
 
+    local existing = spawnedBlips[locationId]
+    if existing and DoesBlipExist(existing) then
+        RemoveBlip(existing)
+        spawnedBlips[locationId] = nil
+    end
+
     local blip = AddBlipForCoord(blipData.x, blipData.y, blipData.z)
     SetBlipSprite(blip, blipData.sprite)
     SetBlipDisplay(blip, 4)
@@ -130,23 +130,17 @@ local function spawnBlip(locationId, location)
     SetBlipAsShortRange(blip, blipData.shortRange == true)
     SetBlipHighDetail(blip, true)
 
-    if blipData.category and blipData.category > 0 then
-        SetBlipCategory(blip, blipData.category)
-    end
-
     BeginTextCommandSetBlipName('STRING')
-    AddTextComponentSubstringLiteral(blipData.label)
+    AddTextComponentString(blipData.label)
     EndTextCommandSetBlipName(blip)
+    Wait(0)
+
     spawnedBlips[locationId] = blip
     debugPrint('Blip erstellt:', locationId, blipData.label, ('@ %.2f, %.2f, %.2f'):format(blipData.x, blipData.y, blipData.z))
     blipDebug(
         'spawn',
         locationId,
-        ('label=%s sprite=%s category=%s'):format(
-            blipData.label,
-            tostring(blipData.sprite),
-            tostring(blipData.category)
-        )
+        ('label=%s sprite=%s'):format(blipData.label, tostring(blipData.sprite))
     )
 end
 
@@ -242,14 +236,7 @@ local function spawnLocation(location)
 end
 
 function EcLifeInvader.World.SpawnBlipsOnly()
-    registerBlipCategoryLegend()
-
-    for locationId, blip in pairs(spawnedBlips) do
-        if DoesBlipExist(blip) then
-            RemoveBlip(blip)
-        end
-        spawnedBlips[locationId] = nil
-    end
+    clearSpawnedBlips()
 
     local locations = Config.Locations or {}
     local blipCount = 0
@@ -288,19 +275,18 @@ function EcLifeInvader.World.Cleanup()
         spawnedObjects[locationId] = nil
     end
 
-    for locationId, blip in pairs(spawnedBlips) do
-        if DoesBlipExist(blip) then
-            RemoveBlip(blip)
-        end
-        spawnedBlips[locationId] = nil
-    end
+    clearSpawnedBlips()
 
     LiBridge.Client.ClearNativeZones()
 end
 
 function EcLifeInvader.World.SpawnAll()
+    if worldSpawning then
+        return
+    end
+
+    worldSpawning = true
     EcLifeInvader.World.Cleanup()
-    registerBlipCategoryLegend()
 
     local locations = Config.Locations or {}
     local count = 0
@@ -319,6 +305,7 @@ function EcLifeInvader.World.SpawnAll()
     end
 
     debugPrint(('Welt gespawnt: %d Standort(e), %d Blip(s)'):format(count, blipCount))
+    worldSpawning = false
 end
 
 AddEventHandler('onResourceStop', function(resourceName)

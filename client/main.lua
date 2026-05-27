@@ -65,10 +65,6 @@ AddEventHandler('onClientResourceStart', function(resourceName)
     end
 
     worldBootstrapCompleted = false
-    if EcLifeInvader.World and EcLifeInvader.World.SpawnBlipsOnly then
-        EcLifeInvader.World.SpawnBlipsOnly()
-        debugPrint('Blip-Bootstrap Start — onClientResourceStart')
-    end
 
     CreateThread(function()
         local attempts = 0
@@ -78,14 +74,6 @@ AddEventHandler('onClientResourceStart', function(resourceName)
         end
         runWorldBootstrap('onClientResourceStart')
     end)
-end)
-
-CreateThread(function()
-    Wait(150)
-    if EcLifeInvader.World and EcLifeInvader.World.SpawnBlipsOnly then
-        EcLifeInvader.World.SpawnBlipsOnly()
-        debugPrint('Blip-Bootstrap Start — early_thread')
-    end
 end)
 
 AddEventHandler('playerSpawned', function()
