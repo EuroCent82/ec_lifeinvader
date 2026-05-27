@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/EuroCent82/ec_lifeinvader/releases"><img src="https://img.shields.io/badge/Version-1.1.9-ff3b30?style=for-the-badge" alt="Version 1.1.8" /></a>
+  <a href="https://github.com/EuroCent82/ec_lifeinvader/releases"><img src="https://img.shields.io/badge/Version-1.1.9-ff3b30?style=for-the-badge" alt="Version 1.1.9" /></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="MIT License" /></a>
 </p>
 
@@ -71,10 +71,13 @@ Alle Optionen sind in **`config.lua`** und **`readme_config.md`** dokumentiert (
 
 ---
 
+## Version 1.1.9
+
+- Blips wie `nxt_driving_school`: Sprite 225 + `AddTextComponentString` (nicht Sprite 77/Lester)
+
 ## Version 1.1.8
 
 - Fix: `decodePremium` (UI/History öffnet wieder)
-- Blip-Legende „LifeInvader“ mit L-Icon (AddTextEntry)
 
 ## Version 1.1.7
 

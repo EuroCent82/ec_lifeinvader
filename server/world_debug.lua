@@ -43,7 +43,7 @@ RegisterNetEvent('ec_lifeinvader:server:worldDebug', function(payload)
 
     print('')
     print('^2[ec_lifeinvader]^0 ─── Welt-Spawn (' .. playerName .. ' | ' .. reason .. ') ───')
-    print(('^2[ec_lifeinvader]^0 %d Blips gespawnt — Koordinaten:'):format(blipOk))
+    print(('^2[ec_lifeinvader]^0 %d Blip(s) gespawnt — Koordinaten (keine Gruppierung wenn = 1):'):format(blipOk))
 
     for i = 1, #blips do
         local b = blips[i]

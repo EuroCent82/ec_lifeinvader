@@ -89,27 +89,7 @@ local function resolveBlipSettings(location)
     }
 end
 
---- Wie nxt_driving_school (client/npc.lua): STRING + AddTextComponentString nach SetBlipSprite.
---- WICHTIG: Sprite 77 = radar_lester_family → Legende zeigt IMMER „Lester“, egal welcher Text gesetzt wird.
-local function setBlipNameSafe(blip, label)
-    if not blip or blip == 0 or not DoesBlipExist(blip) then
-        return false
-    end
-
-    local text = type(label) == 'string' and label ~= '' and label or 'LifeInvader'
-    local ok = pcall(function()
-        BeginTextCommandSetBlipName('STRING')
-        AddTextComponentString(text)
-        EndTextCommandSetBlipName(blip)
-    end)
-
-    if not ok then
-        debugPrint('Blip-Name fehlgeschlagen:', text)
-    end
-
-    return ok
-end
-
+--- 1:1 wie nxt_driving_school/client/npc.lua (kein pcall — der kann den Text-Stack kaputt machen).
 local function spawnBlip(locationId, location)
     if not shouldShowBlip(location) then
         return nil
@@ -120,8 +100,13 @@ local function spawnBlip(locationId, location)
         return nil
     end
 
+    local blipLabel = blipData.label
+    if type(blipLabel) ~= 'string' or blipLabel == '' then
+        blipLabel = 'LifeInvader'
+    end
+
     local blip = AddBlipForCoord(blipData.x, blipData.y, blipData.z)
-    if not blip or blip == 0 or not DoesBlipExist(blip) then
+    if not blip or blip == 0 then
         return nil
     end
 
@@ -130,11 +115,17 @@ local function spawnBlip(locationId, location)
     SetBlipScale(blip, blipData.scale)
     SetBlipColour(blip, blipData.color)
     SetBlipAsShortRange(blip, blipData.shortRange == true)
-    SetBlipHighDetail(blip, true)
-    setBlipNameSafe(blip, blipData.label)
+    BeginTextCommandSetBlipName('STRING')
+    AddTextComponentString(blipLabel)
+    EndTextCommandSetBlipName(blip)
 
     spawnedBlips[locationId] = blip
-    debugPrint('Blip erstellt:', locationId, blipData.label, ('@ %.2f, %.2f, %.2f'):format(blipData.x, blipData.y, blipData.z))
+    debugPrint('Blip erstellt:', locationId, blipLabel, ('sprite=%s @ %.2f, %.2f, %.2f'):format(
+        tostring(blipData.sprite),
+        blipData.x,
+        blipData.y,
+        blipData.z
+    ))
     return blip
 end
 

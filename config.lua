@@ -269,13 +269,12 @@ Config.VersionCheck = {
 }
 
 --------------------------------------------------------------------------------
--- 8) Blips — wie ESX-Banking: gleicher label + sprite = ein Legenden-Eintrag (< 1/2 >)
+-- 8) Blips — 1:1 wie nxt_driving_school (client/npc.lua): STRING + AddTextComponentString
 --
---    enabled = true  → jeder aktive Standort mit coords bekommt einen Blip
---    label          → für alle Standorte gleich lassen, dann gruppiert GTA automatisch
---    sprite         → 225 wie nxt_driving_school (AddTextComponentString → Legenden-Name = label)
---    NICHT 77 (Legende zeigt immer „Lester“ — Story-Sprite, kein freier Name!)
---    Farbe 1 = rot; Icon über sprite wählen: https://docs.fivem.net/docs/game-references/blips/
+--    Pro Standort genau EIN Blip. Mehrere mit gleichem sprite+label → GTA „gruppiert“ (< 1/2 >),
+--    manchmal falscher Legenden-Text. Zum Testen erst nur einen Standort aktiv lassen.
+--
+--    sprite / color / scale → https://docs.fivem.net/docs/game-references/blips/
 --
 --    Pro Standort optional:
 --      blipLabel = '…'  → eigener Name (bricht Gruppierung)
@@ -285,7 +284,7 @@ Config.VersionCheck = {
 Config.Blip = {
     enabled = true,
     debug = false,
-    sprite = 77, -- radar_lester_family = rotes L-Icon
+    sprite = 225,
     color = 1,
     scale = 0.85,
     shortRange = false,
@@ -320,8 +319,10 @@ Config.Locations = {
         scenario = 'WORLD_HUMAN_STAND_MOBILE',
         interactDistance = 2.5,
         interaction = 'target',
-        --- blipLabel = 'LifeInvader Vespucci',  --- nur wenn abweichend von Config.Blip.label
     },
+
+    -- Zweiter Standort (später) — aus, damit kein Blip-Gruppieren (< 1/2 >) den Test verfälscht
+    --[[
     {
         id = 'lifeinvader_pillbox',
         label = 'LifeInvader Pillbox',
@@ -332,6 +333,7 @@ Config.Locations = {
         interactDistance = 2.0,
         interaction = 'target',
     },
+    ]]
 }
 
 --[[  Standort-Beispiele:
