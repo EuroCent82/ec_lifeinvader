@@ -1,4 +1,4 @@
---[[ ec_lifeinvader — Welt-Spawn-Debug (Server-Konsole) ]]
+--[[ ec_lifeinvader — Welt-Spawn-Log in der Server-Konsole ]]
 
 local function worldDebugEnabled()
     if Config.Debug == true then
@@ -8,15 +8,8 @@ local function worldDebugEnabled()
     return world.debug == true
 end
 
-local function playerLabel(source)
-    if source == 0 then
-        return 'console'
-    end
-    local name = GetPlayerName(source)
-    if name and name ~= '' then
-        return ('%s [%d]'):format(name, source)
-    end
-    return ('player [%d]'):format(source)
+local function fmtCoord(x, y, z)
+    return ('%.2f, %.2f, %.2f'):format(tonumber(x) or 0.0, tonumber(y) or 0.0, tonumber(z) or 0.0)
 end
 
 RegisterNetEvent('ec_lifeinvader:server:worldDebug', function(payload)
@@ -25,89 +18,85 @@ RegisterNetEvent('ec_lifeinvader:server:worldDebug', function(payload)
     end
 
     if type(payload) ~= 'table' then
-        print('^1[ec_lifeinvader:world]^0 Ungültiger Debug-Payload')
         return
     end
 
     local src = source
+    local playerName = src > 0 and (GetPlayerName(src) or ('ID ' .. src)) or 'Server'
     local reason = tostring(payload.reason or '?')
-    local complete = payload.worldComplete == true
-
-    print('^5[ec_lifeinvader:world]^0 ───────────────────────────────────────')
-    print(('^5[ec_lifeinvader:world]^0 Spieler: %s | Grund: %s | vollständig: %s'):format(
-        playerLabel(src),
-        reason,
-        complete and 'JA' or 'NEIN'
-    ))
 
     local blips = payload.blips or {}
-    print(('^5[ec_lifeinvader:world]^0 Blips: %d gesetzt (global enabled: %s)'):format(
-        tonumber(payload.blipCount) or #blips,
-        tostring(payload.blipGlobalEnabled)
-    ))
+    local npcs = payload.npcs or {}
+    local objects = payload.objects or {}
+
+    local blipOk = 0
+    for i = 1, #blips do
+        blipOk = blipOk + 1
+    end
+
+    local npcOk = 0
+    for i = 1, #npcs do
+        if npcs[i].ok == true then
+            npcOk = npcOk + 1
+        end
+    end
+
+    print('')
+    print('^2[ec_lifeinvader]^0 ─── Welt-Spawn (' .. playerName .. ' | ' .. reason .. ') ───')
+    print(('^2[ec_lifeinvader]^0 %d Blips gespawnt — Koordinaten:'):format(blipOk))
 
     for i = 1, #blips do
         local b = blips[i]
-        if type(b) == 'table' then
-            print(('^5[ec_lifeinvader:world]^0   [%d] id=%s name="%s" sprite=%s color=%s @ %.2f, %.2f, %.2f blipHandle=%s'):format(
-                i,
-                tostring(b.locationId or '?'),
-                tostring(b.label or '?'),
-                tostring(b.sprite or '?'),
-                tostring(b.color or '?'),
-                tonumber(b.x) or 0.0,
-                tonumber(b.y) or 0.0,
-                tonumber(b.z) or 0.0,
-                tostring(b.handle or '?')
-            ))
-        end
+        print(('^2[ec_lifeinvader]^0   • %s "%s" @ %s'):format(
+            tostring(b.id or '?'),
+            tostring(b.name or 'LifeInvader'),
+            fmtCoord(b.x, b.y, b.z)
+        ))
     end
 
-    local npcs = payload.npcs or {}
-    print(('^5[ec_lifeinvader:world]^0 NPCs: %d Einträge'):format(#npcs))
+    if blipOk == 0 then
+        print('^1[ec_lifeinvader]^0   (keine Blips)')
+    end
+
+    print(('^2[ec_lifeinvader]^0 %d NPCs gespawnt — Koordinaten:'):format(npcOk))
 
     for i = 1, #npcs do
         local n = npcs[i]
-        if type(n) == 'table' then
-            print(('^5[ec_lifeinvader:world]^0   [%d] id=%s model=%s ok=%s entity=%s @ %.2f, %.2f, %.2f | %s'):format(
-                i,
-                tostring(n.locationId or '?'),
-                tostring(n.model or '?'),
-                tostring(n.success == true),
-                tostring(n.entity or '—'),
-                tonumber(n.x) or 0.0,
-                tonumber(n.y) or 0.0,
-                tonumber(n.z) or 0.0,
-                tostring(n.detail or '')
+        local status = n.ok == true and '^2OK^0' or '^1FEHLT^0'
+        print(('^2[ec_lifeinvader]^0   • %s [%s] Modell=%s @ %s'):format(
+            tostring(n.id or '?'),
+            status,
+            tostring(n.model or '?'),
+            fmtCoord(n.x, n.y, n.z)
+        ))
+    end
+
+    if #npcs == 0 then
+        print('^1[ec_lifeinvader]^0   (keine NPC-Standorte gemeldet)')
+    elseif npcOk == 0 then
+        print('^1[ec_lifeinvader]^0   WARNUNG: Kein NPC konnte gespawnt werden!')
+    end
+
+    if #objects > 0 then
+        print(('^2[ec_lifeinvader]^0 %d Objekte — Koordinaten:'):format(#objects))
+        for i = 1, #objects do
+            local o = objects[i]
+            local status = o.ok == true and '^2OK^0' or '^1FEHLT^0'
+            print(('^2[ec_lifeinvader]^0   • %s [%s] @ %s'):format(
+                tostring(o.id or '?'),
+                status,
+                fmtCoord(o.x, o.y, o.z)
             ))
         end
     end
 
-    local objects = payload.objects or {}
-    if #objects > 0 then
-        print(('^5[ec_lifeinvader:world]^0 Objekte: %d'):format(#objects))
-        for i = 1, #objects do
-            local o = objects[i]
-            if type(o) == 'table' then
-                print(('^5[ec_lifeinvader:world]^0   [%d] id=%s model=%s ok=%s @ %.2f, %.2f, %.2f | %s'):format(
-                    i,
-                    tostring(o.locationId or '?'),
-                    tostring(o.model or '?'),
-                    tostring(o.success == true),
-                    tonumber(o.x) or 0.0,
-                    tonumber(o.y) or 0.0,
-                    tonumber(o.z) or 0.0,
-                    tostring(o.detail or '')
-                ))
-            end
-        end
-    end
-
-    print('^5[ec_lifeinvader:world]^0 ───────────────────────────────────────')
+    print('^2[ec_lifeinvader]^0 ─────────────────────────────────────────')
+    print('')
 end)
 
 CreateThread(function()
+    Wait(500)
     if worldDebugEnabled() then
-        print('^5[ec_lifeinvader:world]^0 Debug aktiv — Client meldet Blips/NPCs an diese Konsole (Config.Debug oder Config.World.debug)')
+        print('^2[ec_lifeinvader]^0 Welt-Debug aktiv — nach Spawn erscheinen Blip/NPC-Zeilen in dieser Konsole.')
     end
 end)

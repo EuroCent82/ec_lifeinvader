@@ -250,11 +250,9 @@ Config.Withdraw = { cash = true, bank = false }
 --- true = zusätzliche Client-Konsolen-Ausgaben (Spawn, Bridge, NUI)
 Config.Debug = false
 
---- Welt-Spawn: Debug in der SERVER-Konsole (Blips/NPCs/Coords)
+--- Welt-Spawn: klare Server-Konsole (Blips/NPCs + Koordinaten)
 Config.World = {
     debug = true,
-    entitySpawnDelayMs = 500,
-    npcSpawnAttempts = 3,
 }
 
 --- Demo-Daten beim Start (fake_esx.sql / fake_qbcore.sql / fake_qbox.sql)
