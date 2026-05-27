@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/EuroCent82/ec_lifeinvader/releases"><img src="https://img.shields.io/badge/Version-1.1.3-ff3b30?style=for-the-badge" alt="Version 1.1.3" /></a>
+  <a href="https://github.com/EuroCent82/ec_lifeinvader/releases"><img src="https://img.shields.io/badge/Version-1.1.4-ff3b30?style=for-the-badge" alt="Version 1.1.4" /></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="MIT License" /></a>
 </p>
 
@@ -70,6 +70,11 @@ Manueller SQL-Import: `sql/install_esx.sql` / `install_qbcore.sql` / `install_qb
 Alle Optionen sind in **`config.lua`** und **`readme_config.md`** dokumentiert (Standorte, Preise, Permissions, Fake-Demo-Daten, Blips).
 
 ---
+
+## Version 1.1.4
+
+- Blip-Name „LifeInvader“ via AddTextEntry (Sprite 407 zeigte „Information“)
+- NPC-Spawn: Mutex entfernt, Retry, Native-Zone-Fallback, `spawnZOffset` für MLO
 
 ## Version 1.1.3
 

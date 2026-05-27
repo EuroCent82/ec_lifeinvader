@@ -22,6 +22,25 @@ local function pedLooksSpawned()
     return GetEntityModel(ped) ~= 0
 end
 
+local function countWorldEntities()
+    if EcLifeInvader.World and EcLifeInvader.World.CountEntities then
+        return EcLifeInvader.World.CountEntities()
+    end
+    return 0
+end
+
+local function scheduleWorldRetry(reason, delayMs)
+    CreateThread(function()
+        Wait(delayMs or 2500)
+        if countWorldEntities() > 0 then
+            return
+        end
+        debugPrint('Keine Welt-Entities — Retry:', tostring(reason))
+        worldBootstrapCompleted = false
+        tryWorldRespawn(reason, true)
+    end)
+end
+
 local function tryWorldRespawn(reason, forceBypassThrottle)
     local now = GetGameTimer()
     if not forceBypassThrottle and (now - lastWorldRespawnMs) < 1200 then
@@ -49,6 +68,7 @@ local function runWorldBootstrap(reason)
     worldBootstrapCompleted = true
     debugPrint('Bootstrap Start —', tostring(reason))
     tryWorldRespawn(reason, true)
+    scheduleWorldRetry('bootstrap_entities', 2500)
 end
 
 CreateThread(function()

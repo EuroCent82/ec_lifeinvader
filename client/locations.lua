@@ -6,7 +6,8 @@ EcLifeInvader.World = EcLifeInvader.World or {}
 local spawnedPeds = {}
 local spawnedObjects = {}
 local spawnedBlips = {}
-local worldSpawning = false
+local activeSpawnId = 0
+local BLIP_NAME_GXT = 'BLIP_EC_LIFEINVADER'
 
 local function debugPrint(...)
     LiBridge.Debug(...)
@@ -61,6 +62,15 @@ local function shouldShowBlip(location)
     return Config.Blip and Config.Blip.enabled == true
 end
 
+local function registerBlipTextEntries()
+    local defaults = Config.Blip or {}
+    local label = defaults.label
+    if type(label) ~= 'string' or label == '' then
+        label = 'LifeInvader'
+    end
+    AddTextEntry(BLIP_NAME_GXT, label)
+end
+
 local function resolveBlipLabel(location)
     if type(location.blipLabel) == 'string' and location.blipLabel ~= '' then
         return location.blipLabel
@@ -85,7 +95,7 @@ local function resolveBlipSettings(location)
         x = x,
         y = y,
         z = z,
-        sprite = tonumber(defaults.sprite) or 407,
+        sprite = tonumber(defaults.sprite) or 1,
         color = tonumber(defaults.color) or 1,
         scale = tonumber(defaults.scale) or 0.85,
         shortRange = defaults.shortRange == true,
@@ -130,10 +140,9 @@ local function spawnBlip(locationId, location)
     SetBlipAsShortRange(blip, blipData.shortRange == true)
     SetBlipHighDetail(blip, true)
 
-    BeginTextCommandSetBlipName('STRING')
-    AddTextComponentString(blipData.label)
+    registerBlipTextEntries()
+    BeginTextCommandSetBlipName(BLIP_NAME_GXT)
     EndTextCommandSetBlipName(blip)
-    Wait(0)
 
     spawnedBlips[locationId] = blip
     debugPrint('Blip erstellt:', locationId, blipData.label, ('@ %.2f, %.2f, %.2f'):format(blipData.x, blipData.y, blipData.z))
@@ -163,18 +172,28 @@ local function spawnNpc(locationId, location)
 
     local model = loadModel(location.model)
     if not model then
+        debugPrint('NPC-Spawn fehlgeschlagen (Model):', locationId, tostring(location.model))
         return nil
     end
 
-    local ped = CreatePed(4, model, x, y, z - 1.0, heading, false, false)
+    local zOffset = tonumber(location.spawnZOffset)
+    if zOffset == nil then
+        zOffset = -1.0
+    end
+
+    RequestCollisionAtCoord(x, y, z)
+    local ped = CreatePed(4, model, x, y, z + zOffset, heading, false, false)
     if not DoesEntityExist(ped) then
         SetModelAsNoLongerNeeded(model)
+        debugPrint('NPC-Spawn fehlgeschlagen (CreatePed):', locationId)
         return nil
     end
 
+    SetEntityAsMissionEntity(ped, true, true)
     SetBlockingOfNonTemporaryEvents(ped, true)
     SetPedCanRagdoll(ped, false)
     SetEntityInvincible(ped, true)
+    PlaceEntityOnGroundProperly(ped)
     FreezeEntityPosition(ped, true)
 
     if location.scenario and location.scenario ~= '' then
@@ -184,6 +203,10 @@ local function spawnNpc(locationId, location)
     SetModelAsNoLongerNeeded(model)
     spawnedPeds[locationId] = ped
     registerInteraction(ped, location)
+    LiBridgeClientNative.RegisterZone(location, function()
+        openLifeInvader(location)
+    end)
+    debugPrint('NPC gespawnt:', locationId, ('@ %.2f, %.2f, %.2f'):format(x, y, z + zOffset))
     return ped
 end
 
@@ -210,6 +233,9 @@ local function spawnObject(locationId, location)
     SetModelAsNoLongerNeeded(model)
     spawnedObjects[locationId] = obj
     registerInteraction(obj, location)
+    LiBridgeClientNative.RegisterZone(location, function()
+        openLifeInvader(location)
+    end)
     return obj
 end
 
@@ -280,22 +306,40 @@ function EcLifeInvader.World.Cleanup()
     LiBridge.Client.ClearNativeZones()
 end
 
-function EcLifeInvader.World.SpawnAll()
-    if worldSpawning then
-        return
+function EcLifeInvader.World.CountEntities()
+    local count = 0
+    for _, ped in pairs(spawnedPeds) do
+        if DoesEntityExist(ped) then
+            count = count + 1
+        end
     end
+    for _, obj in pairs(spawnedObjects) do
+        if DoesEntityExist(obj) then
+            count = count + 1
+        end
+    end
+    return count
+end
 
-    worldSpawning = true
+function EcLifeInvader.World.SpawnAll()
+    activeSpawnId = activeSpawnId + 1
+    local spawnId = activeSpawnId
+
     EcLifeInvader.World.Cleanup()
+    registerBlipTextEntries()
 
     local locations = Config.Locations or {}
     local count = 0
     local blipCount = 0
 
     for i = 1, #locations do
+        if spawnId ~= activeSpawnId then
+            debugPrint('Spawn abgebrochen (neuerer Lauf)')
+            return
+        end
+
         local location = locations[i]
         if type(location) == 'table' and location.enabled ~= false then
-            local locationId = tostring(location.id or ('loc_%d'):format(i))
             if shouldShowBlip(location) then
                 blipCount = blipCount + 1
             end
@@ -304,8 +348,11 @@ function EcLifeInvader.World.SpawnAll()
         end
     end
 
-    debugPrint(('Welt gespawnt: %d Standort(e), %d Blip(s)'):format(count, blipCount))
-    worldSpawning = false
+    debugPrint(('Welt gespawnt: %d Standort(e), %d Blip(s), %d Entity(s)'):format(
+        count,
+        blipCount,
+        EcLifeInvader.World.CountEntities()
+    ))
 end
 
 AddEventHandler('onResourceStop', function(resourceName)

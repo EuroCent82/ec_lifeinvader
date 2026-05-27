@@ -268,7 +268,8 @@ Config.VersionCheck = {
 --
 --    enabled = true  → jeder aktive Standort mit coords bekommt einen Blip
 --    label          → für alle Standorte gleich lassen, dann gruppiert GTA automatisch
---    sprite         → NICHT 77 (das ist Lesters Story-Blip „Lester“ in der Legende!)
+--    sprite         → 1 = neutral; NICHT 77 (Lester), NICHT 407 („Information“ in GTA)
+--    label          → wird via AddTextEntry gesetzt (Legenden-Name)
 --
 --    Pro Standort optional:
 --      blipLabel = '…'  → eigener Name (bricht Gruppierung)
@@ -278,7 +279,7 @@ Config.VersionCheck = {
 Config.Blip = {
     enabled = true,
     debug = false,
-    sprite = 407, -- radar_info_icon (neutral; 77 = Lester)
+    sprite = 1, -- neutral; Name kommt aus label (AddTextEntry)
     color = 1,
     scale = 0.85,
     shortRange = false,
@@ -293,6 +294,7 @@ Config.Blip = {
 --    enabled      → false = Standort ignorieren
 --    coords       → vector4(x, y, z, heading)
 --    scenario     → optional, nur NPC (z. B. WORLD_HUMAN_STAND_MOBILE)
+--    spawnZOffset → optional Z-Korrektur (Standard -1.0; in MLO oft 0.0)
 --    interactDistance → Target-/Native-Reichweite
 --    blipLabel    → optional: eigener Kartenname (sonst Config.Blip.label)
 --    blip = false → optional: kein Blip an diesem Standort
@@ -308,6 +310,7 @@ Config.Locations = {
         type = 'npc',
         model = 'cs_barry',
         coords = vector4(-1084.8989, -256.6928, 37.7633, 209.2137),
+        spawnZOffset = 0.0, -- MLO/Innenraum: 0; draußen oft -1.0
         scenario = 'WORLD_HUMAN_STAND_MOBILE',
         interactDistance = 2.5,
         interaction = 'target',
