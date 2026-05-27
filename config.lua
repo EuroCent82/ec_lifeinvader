@@ -247,8 +247,15 @@ Config.Withdraw = { cash = true, bank = false }
 -- 7) Infrastruktur
 --------------------------------------------------------------------------------
 
---- true = zusätzliche Konsolen-Ausgaben (Spawn, Bridge, NUI)
+--- true = zusätzliche Client-Konsolen-Ausgaben (Spawn, Bridge, NUI)
 Config.Debug = false
+
+--- Welt-Spawn: Debug in der SERVER-Konsole (Blips/NPCs/Coords)
+Config.World = {
+    debug = true,
+    entitySpawnDelayMs = 500,
+    npcSpawnAttempts = 3,
+}
 
 --- Demo-Daten beim Start (fake_esx.sql / fake_qbcore.sql / fake_qbox.sql)
 --- Nur wenn lifeinvader_categories noch leer ist.
@@ -268,8 +275,8 @@ Config.VersionCheck = {
 --
 --    enabled = true  → jeder aktive Standort mit coords bekommt einen Blip
 --    label          → für alle Standorte gleich lassen, dann gruppiert GTA automatisch
---    sprite         → 521 = Laptop; NICHT 1 („Ziel“), 77 (Lester), 407 („Information“)
---    label          → Legenden-Name via AddTextComponentString (wie ESX-Banking)
+--    sprite         → 77 = rotes „L“ (LifeInvader-Look); Legenden-Text = label (AddTextComponentString)
+--    NICHT 1 („Ziel“), 407 („Information“), 521 (Laptop)
 --
 --    Pro Standort optional:
 --      blipLabel = '…'  → eigener Name (bricht Gruppierung)
@@ -279,7 +286,7 @@ Config.VersionCheck = {
 Config.Blip = {
     enabled = true,
     debug = false,
-    sprite = 521, -- radar_laptop
+    sprite = 77, -- radar_lester_family = rotes L-Icon
     color = 1,
     scale = 0.85,
     shortRange = false,

@@ -7,6 +7,15 @@ local spawnedPeds = {}
 local spawnedObjects = {}
 local spawnedBlips = {}
 local activeSpawnId = 0
+local lastWorldDebug = { blips = {}, npcs = {}, objects = {} }
+
+local function worldDebugEnabled()
+    if Config.Debug == true then
+        return true
+    end
+    local world = Config.World or {}
+    return world.debug == true
+end
 
 local function debugPrint(...)
     LiBridge.Debug(...)
@@ -14,7 +23,7 @@ end
 
 local function blipDebugEnabled()
     local cfg = Config.Blip or {}
-    return cfg.debug == true
+    return cfg.debug == true or worldDebugEnabled()
 end
 
 local function blipDebug(...)
@@ -26,8 +35,7 @@ end
 local function loadModel(model)
     local hash = type(model) == 'number' and model or joaat(model)
     if not IsModelInCdimage(hash) then
-        debugPrint('Model nicht gefunden:', tostring(model))
-        return nil
+        return nil, 'model_not_in_cdimage'
     end
 
     RequestModel(hash)
@@ -37,11 +45,26 @@ local function loadModel(model)
     end
 
     if not HasModelLoaded(hash) then
-        debugPrint('Model-Timeout:', tostring(model))
-        return nil
+        return nil, 'model_timeout'
     end
 
-    return hash
+    return hash, nil
+end
+
+local function waitForCollisionAt(x, y, z, timeoutMs)
+    timeoutMs = timeoutMs or 8000
+    local untilAt = GetGameTimer() + timeoutMs
+
+    RequestCollisionAtCoord(x, y, z)
+    while GetGameTimer() < untilAt do
+        RequestCollisionAtCoord(x, y, z)
+        if HasCollisionLoadedAroundEntity(PlayerPedId()) then
+            return true
+        end
+        Wait(50)
+    end
+
+    return false
 end
 
 local function shouldShowBlip(location)
@@ -85,7 +108,7 @@ local function resolveBlipSettings(location)
         x = x,
         y = y,
         z = z,
-        sprite = tonumber(defaults.sprite) or 521,
+        sprite = tonumber(defaults.sprite) or 77,
         color = tonumber(defaults.color) or 1,
         scale = tonumber(defaults.scale) or 0.85,
         shortRange = defaults.shortRange == true,
@@ -102,25 +125,42 @@ local function clearSpawnedBlips()
     end
 end
 
---- Legenden-Name wie ESX-Banking: STRING + AddTextComponentString (nicht Sprite-GXT).
 local function setBlipLabel(blip, label)
     BeginTextCommandSetBlipName('STRING')
     AddTextComponentString(label)
     EndTextCommandSetBlipName(blip)
 end
 
+local function recordBlipDebug(entry)
+    lastWorldDebug.blips[#lastWorldDebug.blips + 1] = entry
+end
+
+local function recordNpcDebug(entry)
+    lastWorldDebug.npcs[#lastWorldDebug.npcs + 1] = entry
+end
+
+local function recordObjectDebug(entry)
+    lastWorldDebug.objects[#lastWorldDebug.objects + 1] = entry
+end
+
 local function spawnBlip(locationId, location)
     if not shouldShowBlip(location) then
-        debugPrint('Blip übersprungen:', locationId, '(global oder Standort deaktiviert)')
-        blipDebug('skip', locationId, 'reason=disabled')
-        return
+        recordBlipDebug({
+            locationId = locationId,
+            skipped = true,
+            reason = 'disabled',
+        })
+        return nil
     end
 
     local blipData = resolveBlipSettings(location)
     if not blipData then
-        debugPrint('Blip übersprungen:', locationId, '(ungültige coords)')
-        blipDebug('skip', locationId, 'reason=invalid_coords')
-        return
+        recordBlipDebug({
+            locationId = locationId,
+            skipped = true,
+            reason = 'invalid_coords',
+        })
+        return nil
     end
 
     local existing = spawnedBlips[locationId]
@@ -139,12 +179,21 @@ local function spawnBlip(locationId, location)
     setBlipLabel(blip, blipData.label)
 
     spawnedBlips[locationId] = blip
+    recordBlipDebug({
+        locationId = locationId,
+        label = blipData.label,
+        sprite = blipData.sprite,
+        color = blipData.color,
+        x = blipData.x,
+        y = blipData.y,
+        z = blipData.z,
+        handle = blip,
+        skipped = false,
+    })
+
     debugPrint('Blip erstellt:', locationId, blipData.label, ('@ %.2f, %.2f, %.2f'):format(blipData.x, blipData.y, blipData.z))
-    blipDebug(
-        'spawn',
-        locationId,
-        ('label=%s sprite=%s'):format(blipData.label, tostring(blipData.sprite))
-    )
+    blipDebug('spawn', locationId, ('label=%s sprite=%s'):format(blipData.label, tostring(blipData.sprite)))
+    return blip
 end
 
 local function openLifeInvader(location)
@@ -164,16 +213,15 @@ local function registerNativeFallback(location)
     end)
 end
 
---- NPC-Spawn wie v1.0.0 — kein PlaceEntityOnGroundProperly (verschiebt Peds in MLOs unter die Map).
 local function spawnNpc(locationId, location)
     local x, y, z, heading = LiBridge.Vec4Parts(location.coords)
     if not x then
-        return nil
-    end
-
-    local model = loadModel(location.model)
-    if not model then
-        debugPrint('NPC-Spawn fehlgeschlagen (Model):', locationId, tostring(location.model))
+        recordNpcDebug({
+            locationId = locationId,
+            model = location.model,
+            success = false,
+            detail = 'invalid_coords',
+        })
         return nil
     end
 
@@ -182,16 +230,61 @@ local function spawnNpc(locationId, location)
         zOffset = -1.0
     end
 
-    local ped = CreatePed(4, model, x, y, z + zOffset, heading, false, false)
-    if not DoesEntityExist(ped) then
-        SetModelAsNoLongerNeeded(model)
-        debugPrint('NPC-Spawn fehlgeschlagen (CreatePed):', locationId)
+    local spawnX, spawnY, spawnZ = x, y, z + zOffset
+    local modelName = tostring(location.model or '?')
+    local model, loadErr = loadModel(location.model)
+
+    if not model then
+        recordNpcDebug({
+            locationId = locationId,
+            model = modelName,
+            x = spawnX,
+            y = spawnY,
+            z = spawnZ,
+            success = false,
+            detail = 'load_model:' .. tostring(loadErr),
+        })
+        debugPrint('NPC-Spawn fehlgeschlagen (Model):', locationId, modelName, loadErr)
         return nil
     end
 
+    waitForCollisionAt(spawnX, spawnY, spawnZ, 8000)
+
+    local ped = nil
+    local lastErr = 'create_ped_failed'
+    local maxAttempts = tonumber((Config.World or {}).npcSpawnAttempts) or 3
+
+    for attempt = 1, maxAttempts do
+        ped = CreatePed(4, model, spawnX, spawnY, spawnZ, heading, false, false)
+        if DoesEntityExist(ped) then
+            lastErr = nil
+            break
+        end
+        Wait(100)
+        lastErr = ('create_ped_failed_attempt_%d'):format(attempt)
+    end
+
+    if not ped or not DoesEntityExist(ped) then
+        SetModelAsNoLongerNeeded(model)
+        recordNpcDebug({
+            locationId = locationId,
+            model = modelName,
+            x = spawnX,
+            y = spawnY,
+            z = spawnZ,
+            success = false,
+            detail = lastErr,
+        })
+        debugPrint('NPC-Spawn fehlgeschlagen (CreatePed):', locationId, lastErr)
+        return nil
+    end
+
+    SetEntityAsMissionEntity(ped, true, true)
     SetBlockingOfNonTemporaryEvents(ped, true)
     SetPedCanRagdoll(ped, false)
     SetEntityInvincible(ped, true)
+    SetEntityCoordsNoOffset(ped, spawnX, spawnY, spawnZ, false, false, false)
+    SetEntityHeading(ped, heading)
     FreezeEntityPosition(ped, true)
 
     if location.scenario and location.scenario ~= '' then
@@ -202,24 +295,63 @@ local function spawnNpc(locationId, location)
     spawnedPeds[locationId] = ped
     registerInteraction(ped, location)
     registerNativeFallback(location)
-    debugPrint('NPC gespawnt:', locationId, ('@ %.2f, %.2f, %.2f'):format(x, y, z + zOffset))
+
+    recordNpcDebug({
+        locationId = locationId,
+        model = modelName,
+        x = spawnX,
+        y = spawnY,
+        z = spawnZ,
+        entity = ped,
+        success = true,
+        detail = 'spawned',
+    })
+
+    debugPrint('NPC gespawnt:', locationId, ('entity=%s @ %.2f, %.2f, %.2f'):format(ped, spawnX, spawnY, spawnZ))
     return ped
 end
 
 local function spawnObject(locationId, location)
     local x, y, z, heading = LiBridge.Vec4Parts(location.coords)
     if not x then
+        recordObjectDebug({
+            locationId = locationId,
+            model = location.model,
+            success = false,
+            detail = 'invalid_coords',
+        })
         return nil
     end
 
-    local model = loadModel(location.model)
+    local modelName = tostring(location.model or '?')
+    local model, loadErr = loadModel(location.model)
     if not model then
+        recordObjectDebug({
+            locationId = locationId,
+            model = modelName,
+            x = x,
+            y = y,
+            z = z,
+            success = false,
+            detail = 'load_model:' .. tostring(loadErr),
+        })
         return nil
     end
+
+    waitForCollisionAt(x, y, z, 5000)
 
     local obj = CreateObject(model, x, y, z, false, false, false)
     if not DoesEntityExist(obj) then
         SetModelAsNoLongerNeeded(model)
+        recordObjectDebug({
+            locationId = locationId,
+            model = modelName,
+            x = x,
+            y = y,
+            z = z,
+            success = false,
+            detail = 'create_object_failed',
+        })
         return nil
     end
 
@@ -230,18 +362,22 @@ local function spawnObject(locationId, location)
     spawnedObjects[locationId] = obj
     registerInteraction(obj, location)
     registerNativeFallback(location)
+
+    recordObjectDebug({
+        locationId = locationId,
+        model = modelName,
+        x = x,
+        y = y,
+        z = z,
+        success = true,
+        detail = 'spawned',
+    })
+
     return obj
 end
 
-local function spawnLocation(location)
-    if type(location) ~= 'table' or location.enabled == false then
-        return
-    end
-
-    local locationId = tostring(location.id or ('loc_%s'):format(#spawnedPeds + #spawnedObjects + 1))
+local function spawnLocationEntities(location, locationId)
     local locationType = LiBridge.NormalizeLocationType(location)
-
-    spawnBlip(locationId, location)
 
     if locationType == 'item' then
         debugPrint('Standort', locationId, 'ist item-only — kein Welt-Spawn')
@@ -255,27 +391,54 @@ local function spawnLocation(location)
     end
 end
 
+local function resetWorldDebugTables()
+    lastWorldDebug.blips = {}
+    lastWorldDebug.npcs = {}
+    lastWorldDebug.objects = {}
+end
+
+function EcLifeInvader.World.ReportToServer(reason)
+    if not worldDebugEnabled() then
+        return
+    end
+
+    local blipCount = 0
+    for i = 1, #lastWorldDebug.blips do
+        if lastWorldDebug.blips[i].skipped ~= true then
+            blipCount = blipCount + 1
+        end
+    end
+
+    TriggerServerEvent('ec_lifeinvader:server:worldDebug', {
+        reason = reason or 'unknown',
+        worldComplete = EcLifeInvader.World.IsWorldComplete(),
+        blipGlobalEnabled = Config.Blip and Config.Blip.enabled == true,
+        blipCount = blipCount,
+        blips = lastWorldDebug.blips,
+        npcs = lastWorldDebug.npcs,
+        objects = lastWorldDebug.objects,
+    })
+end
+
 function EcLifeInvader.World.SpawnBlipsOnly()
+    resetWorldDebugTables()
     clearSpawnedBlips()
 
     local locations = Config.Locations or {}
     local blipCount = 0
-    local globalEnabled = Config.Blip and Config.Blip.enabled == true
-    blipDebug('start SpawnBlipsOnly', 'globalEnabled=' .. tostring(globalEnabled), 'locations=' .. tostring(#locations))
 
     for i = 1, #locations do
         local location = locations[i]
         if type(location) == 'table' and location.enabled ~= false then
             local locationId = tostring(location.id or ('loc_%d'):format(i))
-            if shouldShowBlip(location) then
-                spawnBlip(locationId, location)
+            if spawnBlip(locationId, location) then
                 blipCount = blipCount + 1
             end
         end
     end
 
     debugPrint(('Blips gespawnt: %d'):format(blipCount))
-    blipDebug('done SpawnBlipsOnly', 'count=' .. tostring(blipCount))
+    EcLifeInvader.World.ReportToServer('SpawnBlipsOnly')
 end
 
 function EcLifeInvader.World.Cleanup()
@@ -346,33 +509,52 @@ function EcLifeInvader.World.SpawnAll()
     activeSpawnId = activeSpawnId + 1
     local spawnId = activeSpawnId
 
+    resetWorldDebugTables()
     EcLifeInvader.World.Cleanup()
 
     local locations = Config.Locations or {}
-    local count = 0
-    local blipCount = 0
+    local locationCount = 0
 
     for i = 1, #locations do
         if spawnId ~= activeSpawnId then
-            debugPrint('Spawn abgebrochen (neuerer Lauf)')
             return
         end
 
         local location = locations[i]
         if type(location) == 'table' and location.enabled ~= false then
-            if shouldShowBlip(location) then
-                blipCount = blipCount + 1
-            end
-            spawnLocation(location)
-            count = count + 1
+            local locationId = tostring(location.id or ('loc_%d'):format(i))
+            spawnBlip(locationId, location)
+            locationCount = locationCount + 1
         end
     end
 
-    debugPrint(('Welt gespawnt: %d Standort(e), %d Blip(s), vollständig=%s'):format(
-        count,
-        blipCount,
-        tostring(EcLifeInvader.World.IsWorldComplete())
-    ))
+    CreateThread(function()
+        local delayMs = tonumber((Config.World or {}).entitySpawnDelayMs) or 500
+        Wait(delayMs)
+
+        if spawnId ~= activeSpawnId then
+            return
+        end
+
+        for i = 1, #locations do
+            if spawnId ~= activeSpawnId then
+                return
+            end
+
+            local location = locations[i]
+            if type(location) == 'table' and location.enabled ~= false then
+                local locationId = tostring(location.id or ('loc_%d'):format(i))
+                spawnLocationEntities(location, locationId)
+            end
+        end
+
+        debugPrint(('Welt gespawnt: %d Standort(e), vollständig=%s'):format(
+            locationCount,
+            tostring(EcLifeInvader.World.IsWorldComplete())
+        ))
+
+        EcLifeInvader.World.ReportToServer('SpawnAll')
+    end)
 end
 
 AddEventHandler('onResourceStop', function(resourceName)
@@ -384,7 +566,6 @@ end)
 
 RegisterCommand('ec_li_blips_debug', function()
     if EcLifeInvader.World and EcLifeInvader.World.SpawnBlipsOnly then
-        blipDebug('manual command trigger')
         EcLifeInvader.World.SpawnBlipsOnly()
     end
 end, false)
@@ -392,6 +573,11 @@ end, false)
 RegisterCommand('ec_li_world_respawn', function()
     if EcLifeInvader.World and EcLifeInvader.World.SpawnAll then
         EcLifeInvader.World.SpawnAll()
-        debugPrint('Manueller Welt-Respawn — vollständig:', tostring(EcLifeInvader.World.IsWorldComplete()))
+    end
+end, false)
+
+RegisterCommand('ec_li_world_debug', function()
+    if EcLifeInvader.World and EcLifeInvader.World.ReportToServer then
+        EcLifeInvader.World.ReportToServer('manual_command')
     end
 end, false)

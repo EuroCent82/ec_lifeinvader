@@ -37,6 +37,10 @@ local function scheduleWorldRetry(reason, delayMs)
         debugPrint('Welt unvollständig — Retry:', tostring(reason))
         worldBootstrapCompleted = false
         tryWorldRespawn(reason, true)
+        Wait(1500)
+        if EcLifeInvader.World and EcLifeInvader.World.ReportToServer then
+            EcLifeInvader.World.ReportToServer('retry_' .. tostring(reason))
+        end
     end)
 end
 
