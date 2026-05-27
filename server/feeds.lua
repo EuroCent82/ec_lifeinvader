@@ -72,6 +72,80 @@ local function durationLabelFromHours(hours)
     return ('%d Stunden'):format(hours)
 end
 
+local function anonymDaysMaxForHours(hours)
+    local capHours = (Config.PremiumFeatures.anonym or {}).maxHours or 48
+    local capDays = math.max(1, math.floor(capHours / 24))
+    return math.min(math.max(1, math.ceil((tonumber(hours) or 24) / 24)), capDays)
+end
+
+function LiBridgeServerFeeds.BuildInvoiceBreakdown(row)
+    local hours = tonumber(row.duration_hours) or 24
+    local durationLabel = durationLabelFromHours(hours)
+    local baseCost = 0
+
+    for _, entry in ipairs(Config.Durations or {}) do
+        if tonumber(entry.hours) == hours then
+            baseCost = tonumber(entry.baseCost) or 0
+            break
+        end
+    end
+
+    local content = row.content or ''
+    local textCost = #content * (Config.CharCost or 0)
+    local items = {}
+
+    items[#items + 1] = {
+        label = ('Grundpreis · %s'):format(durationLabel),
+        amount = baseCost,
+    }
+
+    if textCost > 0 then
+        items[#items + 1] = {
+            label = ('Anzeigentext · %d Zeichen'):format(#content),
+            amount = textCost,
+        }
+    end
+
+    local premium = decodePremium(row.premium)
+    local features = Config.PremiumFeatures or {}
+    local maxDays = math.max(1, math.ceil(hours / 24))
+
+    if premium and premium.spotlight and premium.spotlight.days then
+        local days = math.max(1, math.min(math.floor(premium.spotlight.days), maxDays))
+        local perDay = (features.spotlight and features.spotlight.costPerDay) or 0
+        items[#items + 1] = {
+            label = 'Premium Spotlight',
+            detail = ('%d Tag(e) × $%s'):format(days, perDay),
+            amount = perDay * days,
+        }
+    end
+
+    if premium and premium.anonym and premium.anonym.days then
+        local days = math.max(1, math.min(math.floor(premium.anonym.days), anonymDaysMaxForHours(hours)))
+        local perDay = (features.anonym and features.anonym.costPerDay) or 0
+        items[#items + 1] = {
+            label = 'Anonym posten',
+            detail = ('%d Tag(e) × $%s'):format(days, perDay),
+            amount = perDay * days,
+        }
+    end
+
+    if premium and premium.liveticker and premium.liveticker.days then
+        local days = math.max(1, math.min(math.floor(premium.liveticker.days), maxDays))
+        local perDay = (features.liveticker and features.liveticker.costPerDay) or 0
+        items[#items + 1] = {
+            label = 'Live-Ticker',
+            detail = ('%d Tag(e) × $%s'):format(days, perDay),
+            amount = perDay * days,
+        }
+    end
+
+    return {
+        items = items,
+        total = tonumber(row.price_paid) or 0,
+    }
+end
+
 local function premiumLinesFromJson(premium)
     local decoded = premium
     if type(premium) == 'string' and premium ~= '' then
@@ -195,6 +269,7 @@ function LiBridgeServerFeeds.FormatHistoryRow(row)
         durationHours = row.duration_hours,
         pricePaid = row.price_paid or 0,
         premiumLines = premiumLinesFromJson(row.premium),
+        invoice = LiBridgeServerFeeds.BuildInvoiceBreakdown(row),
         premiumDraft = premium,
         ownerIdentifier = row.identifier,
     }

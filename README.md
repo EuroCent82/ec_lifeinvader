@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/EuroCent82/ec_lifeinvader/releases"><img src="https://img.shields.io/badge/Version-1.1.0-ff3b30?style=for-the-badge" alt="Version 1.1.0" /></a>
+  <a href="https://github.com/EuroCent82/ec_lifeinvader/releases"><img src="https://img.shields.io/badge/Version-1.1.1-ff3b30?style=for-the-badge" alt="Version 1.1.1" /></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="MIT License" /></a>
 </p>
 
@@ -71,11 +71,15 @@ Alle Optionen sind in **`config.lua`** und **`readme_config.md`** dokumentiert (
 
 ---
 
+## Version 1.1.1
+
+- Blips: ein Marker pro Standort, gruppiert als „LifeInvader“ (`Config.Blip` + optional `blipLabel`)
+- Buchungs-Popup: Rechnungsaufschlüsselung inkl. Premium-Kosten
+- Tooltips für Kontakt-Icons (Feed + Modal)
+
 ## Version 1.1.0
 
-- Buchungshistorie mit LIV-IDs und Buchungs-Popup
-- Abgelaufene Anzeigen **erneuern** (Formular vorausgefüllt)
-- Feed-Popup, Kontakt-Icons mit Tooltip, einheitliches Karten-Layout
+- Buchungshistorie, Erneuern, Feed-Popup, Kontakt-Icons
 
 ---
 

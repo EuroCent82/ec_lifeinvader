@@ -264,25 +264,26 @@ Config.VersionCheck = {
 }
 
 --------------------------------------------------------------------------------
--- 8) Blips — Karten-Markierungen
+-- 8) Blips — eine Markierung pro Standort (gruppiert auf der Karte)
 --
---    Config.Blip.enabled = true  → Blips für alle Standorte (Standard)
---    Pro Standort optional:
---      blip.enabled = true   → erzwingen AN (auch wenn global false)
---      blip.enabled = false  → erzwingen AUS (auch wenn global true)
---      blip weglassen        → erbt Config.Blip.enabled
+--    enabled = true     → jeder aktive Standort mit coords bekommt einen Blip
+--    label             → Standard-Name für ALLE Standorte („gruppiert“ in der Legende)
+--    category          → gleiche Kategorie = GTA fasst Blips zusammen (optional)
 --
---    WICHTIG: blip.enabled = false am Standort blockiert den globalen Schalter!
+--    Pro Standort nur noch optional:
+--      blipLabel = 'LifeInvader Vespucci'  → eigener Name (sonst Config.Blip.label)
+--      blip = false                       → keinen Blip an diesem Standort
 --------------------------------------------------------------------------------
 
 Config.Blip = {
-    enabled = false,
-    debug = false,   --- true: detaillierte Blip-Logs + /ec_li_blips_debug
+    enabled = true,
+    debug = false,
     sprite = 77,
     color = 1,
     scale = 0.85,
     shortRange = false,
     label = 'LifeInvader',
+    category = 12,
 }
 
 --------------------------------------------------------------------------------
@@ -294,7 +295,8 @@ Config.Blip = {
 --    coords       → vector4(x, y, z, heading)
 --    scenario     → optional, nur NPC (z. B. WORLD_HUMAN_STAND_MOBILE)
 --    interactDistance → Target-/Native-Reichweite
---    blip         → enabled, sprite, color, scale, label (optional)
+--    blipLabel    → optional: eigener Kartenname (sonst Config.Blip.label)
+--    blip = false → optional: kein Blip an diesem Standort
 --
 --    type = 'item'  → kein Welt-Spawn, UI über Config.Item
 --------------------------------------------------------------------------------
@@ -310,8 +312,7 @@ Config.Locations = {
         scenario = 'WORLD_HUMAN_STAND_MOBILE',
         interactDistance = 2.5,
         interaction = 'target',
-        --- explizit AN (hilft beim Testen)
-        blip = { enabled = true, sprite = 77, color = 1, label = 'LifeInvader Vespucci' },
+        --- blipLabel = 'LifeInvader Vespucci',  --- nur wenn abweichend von Config.Blip.label
     },
     {
         id = 'lifeinvader_pillbox',
@@ -327,7 +328,7 @@ Config.Locations = {
 
 --[[  Standort-Beispiele:
 
--- Objekt mit Native (E) + Blip
+-- Zweiter Standort (gleicher Kartenname „LifeInvader“, eigener Blip-Punkt)
 {
     id = 'lifeinvader_terminal',
     label = 'LifeInvader Terminal',
@@ -337,8 +338,13 @@ Config.Locations = {
     coords = vector4(298.62, -584.41, 43.26, 70.0),
     interactDistance = 2.0,
     interaction = 'native',
-    blip = { enabled = true, sprite = 77, color = 1, label = 'LifeInvader' },
 },
+
+-- Eigener Name auf der Karte (selten nötig)
+-- blipLabel = 'LifeInvader Pillbox',
+
+-- Kein Blip an diesem Standort
+-- blip = false,
 
 -- Nur Item (kein NPC) — zusätzlich Config.Item.enabled = true
 {

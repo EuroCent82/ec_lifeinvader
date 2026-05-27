@@ -44,46 +44,52 @@ local function loadModel(model)
 end
 
 local function shouldShowBlip(location)
-    local globalEnabled = Config.Blip and Config.Blip.enabled == true
-    local locBlip = location.blip
-
-    if type(locBlip) ~= 'table' then
-        return globalEnabled
-    end
-
-    if locBlip.enabled == true then
-        return true
-    end
-
-    if locBlip.enabled == false then
+    if location.blip == false then
         return false
     end
 
-    return globalEnabled
+    local locationType = LiBridge.NormalizeLocationType(location)
+    if locationType == 'item' then
+        return false
+    end
+
+    if location.enabled == false then
+        return false
+    end
+
+    return Config.Blip and Config.Blip.enabled == true
+end
+
+local function resolveBlipLabel(location)
+    if type(location.blipLabel) == 'string' and location.blipLabel ~= '' then
+        return location.blipLabel
+    end
+
+    local defaults = Config.Blip or {}
+    if type(defaults.label) == 'string' and defaults.label ~= '' then
+        return defaults.label
+    end
+
+    return 'LifeInvader'
 end
 
 local function resolveBlipSettings(location)
     local defaults = Config.Blip or {}
-    local locBlip = type(location.blip) == 'table' and location.blip or {}
     local x, y, z = LiBridge.Vec4Parts(location.coords)
     if not x then
         return nil
-    end
-
-    local shortRange = defaults.shortRange == true
-    if locBlip.shortRange ~= nil then
-        shortRange = locBlip.shortRange == true
     end
 
     return {
         x = x,
         y = y,
         z = z,
-        sprite = tonumber(locBlip.sprite) or tonumber(defaults.sprite) or 77,
-        color = tonumber(locBlip.color) or tonumber(defaults.color) or 1,
-        scale = tonumber(locBlip.scale) or tonumber(defaults.scale) or 0.85,
-        shortRange = shortRange,
-        label = locBlip.label or defaults.label or location.label or 'LifeInvader',
+        sprite = tonumber(defaults.sprite) or 77,
+        color = tonumber(defaults.color) or 1,
+        scale = tonumber(defaults.scale) or 0.85,
+        shortRange = defaults.shortRange == true,
+        label = resolveBlipLabel(location),
+        category = tonumber(defaults.category),
     }
 end
 
@@ -108,6 +114,11 @@ local function spawnBlip(locationId, location)
     SetBlipColour(blip, blipData.color)
     SetBlipAsShortRange(blip, blipData.shortRange == true)
     SetBlipHighDetail(blip, true)
+
+    if blipData.category and blipData.category > 0 then
+        SetBlipCategory(blip, blipData.category)
+    end
+
     BeginTextCommandSetBlipName('STRING')
     AddTextComponentSubstringPlayerName(blipData.label)
     EndTextCommandSetBlipName(blip)
@@ -116,11 +127,10 @@ local function spawnBlip(locationId, location)
     blipDebug(
         'spawn',
         locationId,
-        ('sprite=%s color=%s scale=%.2f shortRange=%s'):format(
+        ('label=%s sprite=%s category=%s'):format(
+            blipData.label,
             tostring(blipData.sprite),
-            tostring(blipData.color),
-            blipData.scale,
-            tostring(blipData.shortRange)
+            tostring(blipData.category)
         )
     )
 end
