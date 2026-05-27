@@ -268,7 +268,7 @@ Config.VersionCheck = {
 --
 --    enabled = true     → jeder aktive Standort mit coords bekommt einen Blip
 --    label             → Standard-Name für ALLE Standorte („gruppiert“ in der Legende)
---    category          → gleiche Kategorie = GTA fasst Blips zusammen (optional)
+--    category          → gleiche Kategorie = GTA fasst Blips zusammen (12–133, benannt via BLIP_CAT_*)
 --
 --    Pro Standort nur noch optional:
 --      blipLabel = 'LifeInvader Vespucci'  → eigener Name (sonst Config.Blip.label)
@@ -317,7 +317,7 @@ Config.Locations = {
     {
         id = 'lifeinvader_pillbox',
         label = 'LifeInvader Pillbox',
-        enabled = false,
+        enabled = true,
         type = 'object',
         model = 'prop_laptop_01a',
         coords = vector4(298.62, -584.41, 43.26, 70.0),

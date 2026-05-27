@@ -60,6 +60,21 @@ local function shouldShowBlip(location)
     return Config.Blip and Config.Blip.enabled == true
 end
 
+local function registerBlipCategoryLegend()
+    local defaults = Config.Blip or {}
+    local category = tonumber(defaults.category)
+    if not category or category < 12 or category > 133 then
+        return
+    end
+
+    local label = defaults.label
+    if type(label) ~= 'string' or label == '' then
+        label = 'LifeInvader'
+    end
+
+    AddTextEntry(('BLIP_CAT_%d'):format(category), label)
+end
+
 local function resolveBlipLabel(location)
     if type(location.blipLabel) == 'string' and location.blipLabel ~= '' then
         return location.blipLabel
@@ -120,7 +135,7 @@ local function spawnBlip(locationId, location)
     end
 
     BeginTextCommandSetBlipName('STRING')
-    AddTextComponentSubstringPlayerName(blipData.label)
+    AddTextComponentSubstringLiteral(blipData.label)
     EndTextCommandSetBlipName(blip)
     spawnedBlips[locationId] = blip
     debugPrint('Blip erstellt:', locationId, blipData.label, ('@ %.2f, %.2f, %.2f'):format(blipData.x, blipData.y, blipData.z))
@@ -227,6 +242,8 @@ local function spawnLocation(location)
 end
 
 function EcLifeInvader.World.SpawnBlipsOnly()
+    registerBlipCategoryLegend()
+
     for locationId, blip in pairs(spawnedBlips) do
         if DoesBlipExist(blip) then
             RemoveBlip(blip)
@@ -283,6 +300,7 @@ end
 
 function EcLifeInvader.World.SpawnAll()
     EcLifeInvader.World.Cleanup()
+    registerBlipCategoryLegend()
 
     local locations = Config.Locations or {}
     local count = 0
