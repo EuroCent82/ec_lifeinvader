@@ -273,7 +273,7 @@ Config.VersionCheck = {
 --
 --    enabled = true  → jeder aktive Standort mit coords bekommt einen Blip
 --    label          → für alle Standorte gleich lassen, dann gruppiert GTA automatisch
---    sprite         → 77 = rotes „L“ (LifeInvader-Look); Legenden-Text = label (AddTextComponentString)
+--    sprite         → 77 = rotes „L“; Legenden-Text = label (AddTextEntry BLIP_EC_LIFEINVADER)
 --    NICHT 1 („Ziel“), 407 („Information“), 521 (Laptop)
 --
 --    Pro Standort optional:

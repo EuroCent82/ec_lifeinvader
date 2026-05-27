@@ -78,6 +78,19 @@ local function anonymDaysMaxForHours(hours)
     return math.min(math.max(1, math.ceil((tonumber(hours) or 24) / 24)), capDays)
 end
 
+local function decodePremium(raw)
+    if type(raw) == 'table' then
+        return raw
+    end
+    if type(raw) == 'string' and raw ~= '' then
+        local ok, decoded = pcall(json.decode, raw)
+        if ok and type(decoded) == 'table' then
+            return decoded
+        end
+    end
+    return nil
+end
+
 function LiBridgeServerFeeds.BuildInvoiceBreakdown(row)
     local hours = tonumber(row.duration_hours) or 24
     local durationLabel = durationLabelFromHours(hours)
@@ -199,19 +212,6 @@ local function relativeTimestamp(createdAt)
     end
 
     return tostring(createdAt)
-end
-
-local function decodePremium(raw)
-    if type(raw) == 'table' then
-        return raw
-    end
-    if type(raw) == 'string' and raw ~= '' then
-        local ok, decoded = pcall(json.decode, raw)
-        if ok and type(decoded) == 'table' then
-            return decoded
-        end
-    end
-    return nil
 end
 
 function LiBridgeServerFeeds.FormatAdRow(row, viewerIdentifier)

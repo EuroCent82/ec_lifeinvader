@@ -63,11 +63,13 @@ RegisterNetEvent('ec_lifeinvader:server:worldDebug', function(payload)
     for i = 1, #npcs do
         local n = npcs[i]
         local status = n.ok == true and '^2OK^0' or '^1FEHLT^0'
-        print(('^2[ec_lifeinvader]^0   • %s [%s] Modell=%s @ %s'):format(
+        local detail = n.detail and (' (' .. tostring(n.detail) .. ')') or ''
+        print(('^2[ec_lifeinvader]^0   • %s [%s] Modell=%s @ %s%s'):format(
             tostring(n.id or '?'),
             status,
             tostring(n.model or '?'),
-            fmtCoord(n.x, n.y, n.z)
+            fmtCoord(n.x, n.y, n.z),
+            detail
         ))
     end
 

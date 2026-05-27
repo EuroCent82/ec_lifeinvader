@@ -6,6 +6,15 @@ EcLifeInvader.World = EcLifeInvader.World or {}
 local spawnedPeds = {}
 local spawnedObjects = {}
 local spawnedBlips = {}
+local BLIP_GXT_KEY = 'BLIP_EC_LIFEINVADER'
+
+CreateThread(function()
+    local label = (Config.Blip or {}).label
+    if type(label) ~= 'string' or label == '' then
+        label = 'LifeInvader'
+    end
+    AddTextEntry(BLIP_GXT_KEY, label)
+end)
 
 local function worldDebugEnabled()
     if Config.Debug == true then
@@ -89,16 +98,17 @@ local function resolveBlipSettings(location)
     }
 end
 
---- EndTextCommandSetBlipName (0xBC38B49…) crasht ohne gültigen Blip / Text-Stack.
+--- GXT-Key als Text-Command (nicht „STRING“) — sonst Legende = Sprite-Name („Lester“ bei 77).
 local function setBlipNameSafe(blip, label)
     if not blip or blip == 0 or not DoesBlipExist(blip) then
         return false
     end
 
-    local text = type(label) == 'string' and label or 'LifeInvader'
+    local text = type(label) == 'string' and label ~= '' and label or 'LifeInvader'
+    AddTextEntry(BLIP_GXT_KEY, text)
+
     local ok = pcall(function()
-        BeginTextCommandSetBlipName('STRING')
-        AddTextComponentSubstringPlayerName(text)
+        BeginTextCommandSetBlipName(BLIP_GXT_KEY)
         EndTextCommandSetBlipName(blip)
     end)
 
@@ -233,6 +243,28 @@ local function spawnLocation(location)
     end
 end
 
+local function resolveNpcPresence(locationId, location)
+    local stored = spawnedPeds[locationId]
+    if stored and stored ~= 0 and DoesEntityExist(stored) then
+        local coords = GetEntityCoords(stored)
+        return true, stored, coords.x, coords.y, coords.z, 'handle'
+    end
+
+    local x, y, z = LiBridge.Vec4Parts(location.coords)
+    if not x then
+        return false, stored, 0.0, 0.0, 0.0, 'no_coords'
+    end
+
+    local modelHash = joaat(location.model)
+    local closest = GetClosestPed(x, y, z, 3.0, true, true, true, false, -1)
+    if closest and closest ~= 0 and DoesEntityExist(closest) and GetEntityModel(closest) == modelHash then
+        spawnedPeds[locationId] = closest
+        return true, closest, x, y, z, 'proximity'
+    end
+
+    return false, stored, x, y, z, 'missing'
+end
+
 local function collectWorldReport()
     local blips = {}
     local npcs = {}
@@ -262,29 +294,28 @@ local function collectWorldReport()
         end
     end
 
-    for locationId, ped in pairs(spawnedPeds) do
-        local exists = ped and DoesEntityExist(ped)
-        local x, y, z = 0.0, 0.0, 0.0
-        if exists then
-            local coords = GetEntityCoords(ped)
-            x, y, z = coords.x, coords.y, coords.z
-        end
-        local modelName = '?'
-        for i = 1, #(Config.Locations or {}) do
-            local entry = Config.Locations[i]
-            if entry and tostring(entry.id) == locationId then
-                modelName = tostring(entry.model or '?')
-                break
+    for i = 1, #(Config.Locations or {}) do
+        local location = Config.Locations[i]
+        if type(location) == 'table' and location.enabled ~= false then
+            local locationType = LiBridge.NormalizeLocationType(location)
+            local locationId = tostring(location.id or ('loc_%d'):format(i))
+
+            if locationType ~= 'item' and locationType ~= 'object' then
+                local ok, ped, x, y, z, source = resolveNpcPresence(locationId, location)
+                if ok and ped and source == 'proximity' then
+                    registerInteraction(ped, location)
+                end
+                npcs[#npcs + 1] = {
+                    id = locationId,
+                    model = tostring(location.model or '?'),
+                    ok = ok,
+                    x = x,
+                    y = y,
+                    z = z,
+                    detail = source,
+                }
             end
         end
-        npcs[#npcs + 1] = {
-            id = locationId,
-            model = modelName,
-            ok = exists,
-            x = x,
-            y = y,
-            z = z,
-        }
     end
 
     for locationId, obj in pairs(spawnedObjects) do
@@ -408,7 +439,11 @@ function EcLifeInvader.World.SpawnAll()
     end
 
     debugPrint(('Welt gespawnt: %d Standort(e), vollständig=%s'):format(count, tostring(EcLifeInvader.World.IsWorldComplete())))
-    EcLifeInvader.World.ReportToServer('SpawnAll')
+
+    CreateThread(function()
+        Wait(250)
+        EcLifeInvader.World.ReportToServer('SpawnAll')
+    end)
 end
 
 AddEventHandler('onResourceStop', function(resourceName)
