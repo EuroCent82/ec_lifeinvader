@@ -13,6 +13,7 @@ local function buildOpenPayload(source, feedData)
             identifier = identifier,
         },
         ads = feedData.ads or {},
+        history = feedData.history or {},
         categories = feedData.categories or {},
         permissions = {
             team = LiBridge.Server.HasPermission(source, 'team'),

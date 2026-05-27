@@ -1,44 +1,82 @@
 <h1 align="center">EC LifeInvader</h1>
 
 <p align="center">
-  <strong>LifeInvader Werbesystem</strong> — Anzeigen schalten, Feed, LifeInvader-Konto.
+  <strong>LifeInvader Werbesystem für FiveM</strong> — Anzeigen schalten, Feed, Guthaben, Buchungshistorie.
 </p>
 
 <p align="center">
-  <a href="https://github.com/EuroCent82/ec_lifeinvader/releases"><img src="https://img.shields.io/badge/Version-1.0.0-ff3b30?style=for-the-badge" alt="Version 1.0.0" /></a>
+  <a href="https://github.com/EuroCent82/ec_lifeinvader/releases"><img src="https://img.shields.io/badge/Version-1.1.0-ff3b30?style=for-the-badge" alt="Version 1.1.0" /></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="MIT License" /></a>
+</p>
+
+<p align="center">
+  <img src="./docs/screenshots/01-feed.png" alt="LifeInvader Anzeigenfeed" width="720" />
 </p>
 
 ---
 
 ## Überblick
 
-**EC LifeInvader** ist ein FiveM-Script für In-Game-Werbeanzeigen im LifeInvader-Stil.
+**EC LifeInvader** bringt ein vollwertiges In-Game-Werbesystem im Stil von GTA Online LifeInvader auf deinen Server: Tablet-NUI, Kategorien, Premium-Optionen und ein separates LifeInvader-Guthaben.
 
-| Bereich | Beschreibung |
+| Feature | Beschreibung |
 | --- | --- |
-| **Feed** | Live-Anzeigen mit Kategorien, Suche, Spotlight |
-| **Schalten** | Anzeige mit Laufzeit (7 / 14 / 30 Tage) und Premium-Optionen |
-| **Konto** | Einzahlen / Auszahlen auf LifeInvader-Guthaben |
+| **Anzeigenfeed** | Live-Anzeigen mit Kategorien, Suche, Spotlight und Detail-Popup |
+| **Anzeige schalten** | Laufzeit, Zeichenpreis, Premium (Spotlight, Anonym, Live-Ticker) |
+| **Buchungshistorie** | Jede Anzeige mit **LIV-ID**, Status, Laufzeit — inkl. **Erneuern** abgelaufener Ads |
+| **LifeInvader-Konto** | Einzahlen vom Bar-/Bankkonto, Abbuchung beim Schalten |
+| **Meine Anzeigen** | Eigene aktive Inserate verwalten und löschen |
+| **Telefon-Bridge** | SMS/Anruf per Icon (gcphone, z-phone, lsfive-phone, roadphone, lb-phone) |
 
 Resource-Name: **`ec_lifeinvader`**
 
 ---
 
-## Installation
+## Screenshots
 
-1. [Release](https://github.com/EuroCent82/ec_lifeinvader/releases) laden oder `ec_lifeinvader.zip` entpacken
-2. Nach `resources/ec_lifeinvader/`
-3. `config.lua` anpassen (Framework, Adapter)
-4. `ensure ec_lifeinvader` — Tabellen werden beim ersten Start automatisch angelegt
-   (Framework → `sql/install_esx.sql` / `install_qbcore.sql` / `install_qbox.sql`)
+| Feed | Anzeige schalten |
+| --- | --- |
+| ![Feed](./docs/screenshots/01-feed.png) | ![Create](./docs/screenshots/02-create.png) |
 
-Manueller SQL-Import nur nötig, wenn `Config.Database.autoInstall = false`.
+| Buchungshistorie | Detail-Popup |
+| --- | --- |
+| ![History](./docs/screenshots/03-history.png) | ![Detail](./docs/screenshots/04-detail.png) |
 
 ---
 
-## Version
+## Installation
 
-**1.0.0** — Erstes öffentliches Release (Feed, Anzeigen schalten/löschen, Konto, ESX/QBCore/Qbox, Phone-Bridges).
+1. **[Release](https://github.com/EuroCent82/ec_lifeinvader/releases)** laden (`ec_lifeinvader.zip`)
+2. Entpacken nach `resources/ec_lifeinvader/`
+3. `config.lua` anpassen (Framework, Standorte, Telefon-Provider)
+4. `ensure ec_lifeinvader` in `server.cfg`
 
-Entwicklung: privates Repo **`ec_lifeinvader_dev`**.
+Tabellen werden beim ersten Start automatisch angelegt (`Config.Database.autoInstall = true`).
+
+Manueller SQL-Import: `sql/install_esx.sql` / `install_qbcore.sql` / `install_qbox.sql`
+
+---
+
+## Framework & Abhängigkeiten
+
+- **ESX Legacy**, **QBCore** oder **Qbox**
+- **oxmysql** oder **mysql-async**
+- Optional: **ox_target** / **qb-target**, Phone-Resource (siehe `readme_config.md`)
+
+---
+
+## Konfiguration
+
+Alle Optionen sind in **`config.lua`** und **`readme_config.md`** dokumentiert (Standorte, Preise, Permissions, Fake-Demo-Daten, Blips).
+
+---
+
+## Version 1.1.0
+
+- Buchungshistorie mit LIV-IDs und Buchungs-Popup
+- Abgelaufene Anzeigen **erneuern** (Formular vorausgefüllt)
+- Feed-Popup, Kontakt-Icons mit Tooltip, einheitliches Karten-Layout
+
+---
+
+<p align="center">Entwicklung: privates Repo <code>ec_lifeinvader_dev</code> · Runtime: <code>ec_lifeinvader</code></p>

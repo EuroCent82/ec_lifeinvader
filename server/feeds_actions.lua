@@ -194,6 +194,9 @@ RegisterNetEvent('ec_lifeinvader:server:postAd', function(requestId, data)
         end
     end
 
+    local renewFromId = tonumber(data.renewFromId)
+
+    local function finishPost()
     LiBridgeServerAccount.RemoveBalance(identifier, price, function(paid, balance, payErr)
         if not paid then
             respondPost(src, requestId, {
@@ -236,14 +239,38 @@ RegisterNetEvent('ec_lifeinvader:server:postAd', function(requestId, data)
             }, src)
 
             LiBridgeServerFeeds.GetActiveAds(identifier, function(ads)
-                respondPost(src, requestId, {
-                    ok = true,
-                    balance = balance,
-                    ads = ads,
-                })
+                LiBridgeServerFeeds.GetPlayerFeedHistory(identifier, function(history)
+                    respondPost(src, requestId, {
+                        ok = true,
+                        balance = balance,
+                        ads = ads,
+                        history = history,
+                    })
+                end)
             end)
         end)
     end)
+    end
+
+    if renewFromId then
+        LiBridge.MySQL.Query(
+            [[SELECT id, identifier, status, expires_at
+              FROM lifeinvader_feeds
+              WHERE id = ?
+              LIMIT 1]],
+            { renewFromId },
+            function(rows)
+                if not LiBridgeServerFeeds.CanRenewRow(rows and rows[1], identifier) then
+                    respondPost(src, requestId, { ok = false, error = 'renew_invalid' })
+                    return
+                end
+                finishPost()
+            end
+        )
+        return
+    end
+
+    finishPost()
 end)
 
 RegisterNetEvent('ec_lifeinvader:server:deleteAd', function(requestId, adId)
@@ -284,10 +311,13 @@ RegisterNetEvent('ec_lifeinvader:server:deleteAd', function(requestId, adId)
                 { adId },
                 function()
                     LiBridgeServerFeeds.GetActiveAds(identifier, function(ads)
-                        respondDelete(src, requestId, {
-                            ok = true,
-                            ads = ads,
-                        })
+                        LiBridgeServerFeeds.GetPlayerFeedHistory(identifier, function(history)
+                            respondDelete(src, requestId, {
+                                ok = true,
+                                ads = ads,
+                                history = history,
+                            })
+                        end)
                     end)
                 end
             )

@@ -1,6 +1,110 @@
 LiBridge = LiBridge or {}
 LiBridgeServerFeeds = LiBridgeServerFeeds or {}
 
+function LiBridgeServerFeeds.FormatLivId(id)
+    return ('LIV-%s'):format(tostring(id or 0))
+end
+
+local function formatDateTimeLabel(value)
+    if not value then
+        return '—'
+    end
+
+    if type(value) == 'number' then
+        return os.date('%d.%m.%Y %H:%M', value)
+    end
+
+    local text = tostring(value)
+    local y, m, d, h, min = text:match('(%d+)-(%d+)-(%d+)%s+(%d+):(%d+)')
+    if y then
+        return ('%s.%s.%s %s:%s'):format(d, m, y, h, min)
+    end
+
+    return text
+end
+
+local function resolveFeedStatus(row)
+    if row.status == 'deleted' then
+        return 'deleted'
+    end
+    if row.status == 'blocked' then
+        return 'blocked'
+    end
+
+    local expires = row.expires_at
+    if type(expires) == 'string' then
+        local y, m, d, h, min, sec = expires:match('(%d+)-(%d+)-(%d+)%s+(%d+):(%d+):(%d+)')
+        if y then
+            local expiresAt = os.time({
+                year = tonumber(y),
+                month = tonumber(m),
+                day = tonumber(d),
+                hour = tonumber(h),
+                min = tonumber(min),
+                sec = tonumber(sec),
+            })
+            if expiresAt and expiresAt < os.time() then
+                return 'expired'
+            end
+        end
+    end
+
+    if row.status == 'active' then
+        return 'active'
+    end
+
+    return 'expired'
+end
+
+local function durationLabelFromHours(hours)
+    hours = tonumber(hours) or 24
+    for _, entry in ipairs(Config.Durations or {}) do
+        if tonumber(entry.hours) == hours then
+            return entry.label
+        end
+    end
+    if hours < 24 then
+        return ('%d Stunden'):format(hours)
+    end
+    if hours % 24 == 0 then
+        return ('%d Tage'):format(hours / 24)
+    end
+    return ('%d Stunden'):format(hours)
+end
+
+local function premiumLinesFromJson(premium)
+    local decoded = premium
+    if type(premium) == 'string' and premium ~= '' then
+        local ok, parsed = pcall(json.decode, premium)
+        if ok and type(parsed) == 'table' then
+            decoded = parsed
+        end
+    end
+
+    if type(decoded) ~= 'table' then
+        return {}
+    end
+
+    local lines = {}
+    local features = Config.PremiumFeatures or {}
+
+    if decoded.spotlight and decoded.spotlight.days then
+        lines[#lines + 1] = ('Premium Spotlight: %d Tag(e)'):format(decoded.spotlight.days)
+    end
+    if decoded.anonym and decoded.anonym.days then
+        lines[#lines + 1] = ('Anonym posten: %d Tag(e)'):format(decoded.anonym.days)
+    end
+    if decoded.liveticker and decoded.liveticker.days then
+        lines[#lines + 1] = ('Live-Ticker: %d Tag(e)'):format(decoded.liveticker.days)
+    end
+
+    if #lines == 0 and next(decoded) ~= nil then
+        lines[#lines + 1] = 'Premium-Paket gebucht'
+    end
+
+    return lines
+end
+
 local function relativeTimestamp(createdAt)
     if not createdAt then
         return 'Kürzlich'
@@ -51,6 +155,7 @@ function LiBridgeServerFeeds.FormatAdRow(row, viewerIdentifier)
 
     return {
         id = row.id,
+        livId = LiBridgeServerFeeds.FormatLivId(row.id),
         title = row.title,
         content = row.content,
         category = row.category,
@@ -61,6 +166,72 @@ function LiBridgeServerFeeds.FormatAdRow(row, viewerIdentifier)
         isMine = viewerIdentifier ~= nil and row.identifier == viewerIdentifier,
         ownerIdentifier = row.identifier,
     }
+end
+
+function LiBridgeServerFeeds.FormatHistoryRow(row)
+    local status = resolveFeedStatus(row)
+    local author = row.author_name or 'Unbekannt'
+    if row.anonymous == 1 or row.anonymous == true then
+        author = 'Anonym'
+    end
+
+    local premium = decodePremium(row.premium)
+    local spotlightActive = row.spotlight_until and true or false
+
+    return {
+        id = row.id,
+        livId = LiBridgeServerFeeds.FormatLivId(row.id),
+        title = row.title,
+        content = row.content,
+        category = row.category,
+        author = author,
+        phone = row.phone or '',
+        timestamp = relativeTimestamp(row.created_at),
+        premium = spotlightActive or (premium and premium.spotlight ~= nil),
+        status = status,
+        createdAtLabel = formatDateTimeLabel(row.created_at),
+        expiresAtLabel = formatDateTimeLabel(row.expires_at),
+        durationLabel = durationLabelFromHours(row.duration_hours),
+        durationHours = row.duration_hours,
+        pricePaid = row.price_paid or 0,
+        premiumLines = premiumLinesFromJson(row.premium),
+        premiumDraft = premium,
+        ownerIdentifier = row.identifier,
+    }
+end
+
+function LiBridgeServerFeeds.CanRenewRow(row, identifier)
+    if not row or not identifier or row.identifier ~= identifier then
+        return false
+    end
+
+    local status = resolveFeedStatus(row)
+    return status == 'expired' or status == 'deleted'
+end
+
+function LiBridgeServerFeeds.GetPlayerFeedHistory(identifier, cb)
+    if not identifier then
+        cb({})
+        return
+    end
+
+    LiBridge.MySQL.Query(
+        [[SELECT id, identifier, author_name, title, content, category, phone, anonymous,
+                 premium, spotlight_until, duration_hours, price_paid, status,
+                 created_at, expires_at
+          FROM lifeinvader_feeds
+          WHERE identifier = ?
+          ORDER BY created_at DESC
+          LIMIT 80]],
+        { identifier },
+        function(result)
+            local history = {}
+            for _, row in ipairs(result or {}) do
+                history[#history + 1] = LiBridgeServerFeeds.FormatHistoryRow(row)
+            end
+            cb(history)
+        end
+    )
 end
 
 function LiBridgeServerFeeds.GetCategories(cb)
@@ -126,11 +297,14 @@ function LiBridgeServerFeeds.LoadOpenData(viewerIdentifier, cb)
     LiBridgeServerFeeds.GetCategories(function(categories)
         LiBridgeServerFeeds.GetActiveAds(viewerIdentifier, function(ads)
             LiBridgeServerFeeds.GetTickerItems(function(ticker)
-                cb({
-                    categories = categories,
-                    ads = ads,
-                    ticker = ticker,
-                })
+                LiBridgeServerFeeds.GetPlayerFeedHistory(viewerIdentifier, function(history)
+                    cb({
+                        categories = categories,
+                        ads = ads,
+                        ticker = ticker,
+                        history = history,
+                    })
+                end)
             end)
         end)
     end)
