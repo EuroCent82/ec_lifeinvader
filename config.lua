@@ -273,8 +273,9 @@ Config.VersionCheck = {
 --
 --    enabled = true  → jeder aktive Standort mit coords bekommt einen Blip
 --    label          → für alle Standorte gleich lassen, dann gruppiert GTA automatisch
---    sprite         → 77 = rotes „L“; Legenden-Text = label (AddTextEntry BLIP_EC_LIFEINVADER)
---    NICHT 1 („Ziel“), 407 („Information“), 521 (Laptop)
+--    sprite         → 225 wie nxt_driving_school (AddTextComponentString → Legenden-Name = label)
+--    NICHT 77 (Legende zeigt immer „Lester“ — Story-Sprite, kein freier Name!)
+--    Farbe 1 = rot; Icon über sprite wählen: https://docs.fivem.net/docs/game-references/blips/
 --
 --    Pro Standort optional:
 --      blipLabel = '…'  → eigener Name (bricht Gruppierung)

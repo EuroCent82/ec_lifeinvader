@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/EuroCent82/ec_lifeinvader/releases"><img src="https://img.shields.io/badge/Version-1.1.8-ff3b30?style=for-the-badge" alt="Version 1.1.8" /></a>
+  <a href="https://github.com/EuroCent82/ec_lifeinvader/releases"><img src="https://img.shields.io/badge/Version-1.1.9-ff3b30?style=for-the-badge" alt="Version 1.1.8" /></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="MIT License" /></a>
 </p>
 

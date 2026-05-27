@@ -6,15 +6,6 @@ EcLifeInvader.World = EcLifeInvader.World or {}
 local spawnedPeds = {}
 local spawnedObjects = {}
 local spawnedBlips = {}
-local BLIP_GXT_KEY = 'BLIP_EC_LIFEINVADER'
-
-CreateThread(function()
-    local label = (Config.Blip or {}).label
-    if type(label) ~= 'string' or label == '' then
-        label = 'LifeInvader'
-    end
-    AddTextEntry(BLIP_GXT_KEY, label)
-end)
 
 local function worldDebugEnabled()
     if Config.Debug == true then
@@ -90,7 +81,7 @@ local function resolveBlipSettings(location)
         x = x,
         y = y,
         z = z,
-        sprite = tonumber(defaults.sprite) or 77,
+        sprite = tonumber(defaults.sprite) or 225,
         color = tonumber(defaults.color) or 1,
         scale = tonumber(defaults.scale) or 0.85,
         shortRange = defaults.shortRange == true,
@@ -98,17 +89,17 @@ local function resolveBlipSettings(location)
     }
 end
 
---- GXT-Key als Text-Command (nicht „STRING“) — sonst Legende = Sprite-Name („Lester“ bei 77).
+--- Wie nxt_driving_school (client/npc.lua): STRING + AddTextComponentString nach SetBlipSprite.
+--- WICHTIG: Sprite 77 = radar_lester_family → Legende zeigt IMMER „Lester“, egal welcher Text gesetzt wird.
 local function setBlipNameSafe(blip, label)
     if not blip or blip == 0 or not DoesBlipExist(blip) then
         return false
     end
 
     local text = type(label) == 'string' and label ~= '' and label or 'LifeInvader'
-    AddTextEntry(BLIP_GXT_KEY, text)
-
     local ok = pcall(function()
-        BeginTextCommandSetBlipName(BLIP_GXT_KEY)
+        BeginTextCommandSetBlipName('STRING')
+        AddTextComponentString(text)
         EndTextCommandSetBlipName(blip)
     end)
 
