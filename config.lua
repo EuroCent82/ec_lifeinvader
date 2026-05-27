@@ -268,8 +268,8 @@ Config.VersionCheck = {
 --
 --    enabled = true  → jeder aktive Standort mit coords bekommt einen Blip
 --    label          → für alle Standorte gleich lassen, dann gruppiert GTA automatisch
---    sprite         → 1 = neutral; NICHT 77 (Lester), NICHT 407 („Information“ in GTA)
---    label          → wird via AddTextEntry gesetzt (Legenden-Name)
+--    sprite         → 521 = Laptop; NICHT 1 („Ziel“), 77 (Lester), 407 („Information“)
+--    label          → Legenden-Name via AddTextComponentString (wie ESX-Banking)
 --
 --    Pro Standort optional:
 --      blipLabel = '…'  → eigener Name (bricht Gruppierung)
@@ -279,7 +279,7 @@ Config.VersionCheck = {
 Config.Blip = {
     enabled = true,
     debug = false,
-    sprite = 1, -- neutral; Name kommt aus label (AddTextEntry)
+    sprite = 521, -- radar_laptop
     color = 1,
     scale = 0.85,
     shortRange = false,
@@ -310,7 +310,7 @@ Config.Locations = {
         type = 'npc',
         model = 'cs_barry',
         coords = vector4(-1084.8989, -256.6928, 37.7633, 209.2137),
-        spawnZOffset = 0.0, -- MLO/Innenraum: 0; draußen oft -1.0
+        --- spawnZOffset = 0.0,  --- optional; Standard -1.0 (wie v1.0.0)
         scenario = 'WORLD_HUMAN_STAND_MOBILE',
         interactDistance = 2.5,
         interaction = 'target',

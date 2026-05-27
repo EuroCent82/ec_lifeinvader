@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/EuroCent82/ec_lifeinvader/releases"><img src="https://img.shields.io/badge/Version-1.1.4-ff3b30?style=for-the-badge" alt="Version 1.1.4" /></a>
+  <a href="https://github.com/EuroCent82/ec_lifeinvader/releases"><img src="https://img.shields.io/badge/Version-1.1.5-ff3b30?style=for-the-badge" alt="Version 1.1.5" /></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="MIT License" /></a>
 </p>
 
@@ -70,6 +70,11 @@ Manueller SQL-Import: `sql/install_esx.sql` / `install_qbcore.sql` / `install_qb
 Alle Optionen sind in **`config.lua`** und **`readme_config.md`** dokumentiert (Standorte, Preise, Permissions, Fake-Demo-Daten, Blips).
 
 ---
+
+## Version 1.1.5
+
+- NPC: v1.0-Spawn zurück, kein PlaceEntityOnGroundProperly; kein Respawn-Wipe
+- Blip: ESX-Banking-Stil (AddTextComponentString), Sprite 521
 
 ## Version 1.1.4
 

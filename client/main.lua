@@ -22,26 +22,30 @@ local function pedLooksSpawned()
     return GetEntityModel(ped) ~= 0
 end
 
-local function countWorldEntities()
-    if EcLifeInvader.World and EcLifeInvader.World.CountEntities then
-        return EcLifeInvader.World.CountEntities()
-    end
-    return 0
+local function isWorldComplete()
+    return EcLifeInvader.World
+        and EcLifeInvader.World.IsWorldComplete
+        and EcLifeInvader.World.IsWorldComplete()
 end
 
 local function scheduleWorldRetry(reason, delayMs)
     CreateThread(function()
-        Wait(delayMs or 2500)
-        if countWorldEntities() > 0 then
+        Wait(delayMs or 3000)
+        if isWorldComplete() then
             return
         end
-        debugPrint('Keine Welt-Entities — Retry:', tostring(reason))
+        debugPrint('Welt unvollständig — Retry:', tostring(reason))
         worldBootstrapCompleted = false
         tryWorldRespawn(reason, true)
     end)
 end
 
 local function tryWorldRespawn(reason, forceBypassThrottle)
+    if isWorldComplete() and reason ~= 'manual' then
+        debugPrint('Welt-Respawn übersprungen (bereits vollständig):', tostring(reason))
+        return false
+    end
+
     local now = GetGameTimer()
     if not forceBypassThrottle and (now - lastWorldRespawnMs) < 1200 then
         return false
@@ -52,7 +56,7 @@ local function tryWorldRespawn(reason, forceBypassThrottle)
         EcLifeInvader.World.SpawnAll()
     end
 
-    debugPrint('Welt-Respawn:', tostring(reason))
+    debugPrint('Welt-Respawn:', tostring(reason), '— vollständig:', tostring(isWorldComplete()))
     return true
 end
 
@@ -68,7 +72,7 @@ local function runWorldBootstrap(reason)
     worldBootstrapCompleted = true
     debugPrint('Bootstrap Start —', tostring(reason))
     tryWorldRespawn(reason, true)
-    scheduleWorldRetry('bootstrap_entities', 2500)
+    scheduleWorldRetry('bootstrap_incomplete', 3000)
 end
 
 CreateThread(function()

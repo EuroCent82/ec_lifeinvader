@@ -7,7 +7,6 @@ local spawnedPeds = {}
 local spawnedObjects = {}
 local spawnedBlips = {}
 local activeSpawnId = 0
-local BLIP_NAME_GXT = 'BLIP_EC_LIFEINVADER'
 
 local function debugPrint(...)
     LiBridge.Debug(...)
@@ -62,15 +61,6 @@ local function shouldShowBlip(location)
     return Config.Blip and Config.Blip.enabled == true
 end
 
-local function registerBlipTextEntries()
-    local defaults = Config.Blip or {}
-    local label = defaults.label
-    if type(label) ~= 'string' or label == '' then
-        label = 'LifeInvader'
-    end
-    AddTextEntry(BLIP_NAME_GXT, label)
-end
-
 local function resolveBlipLabel(location)
     if type(location.blipLabel) == 'string' and location.blipLabel ~= '' then
         return location.blipLabel
@@ -95,7 +85,7 @@ local function resolveBlipSettings(location)
         x = x,
         y = y,
         z = z,
-        sprite = tonumber(defaults.sprite) or 1,
+        sprite = tonumber(defaults.sprite) or 521,
         color = tonumber(defaults.color) or 1,
         scale = tonumber(defaults.scale) or 0.85,
         shortRange = defaults.shortRange == true,
@@ -110,6 +100,13 @@ local function clearSpawnedBlips()
         end
         spawnedBlips[locationId] = nil
     end
+end
+
+--- Legenden-Name wie ESX-Banking: STRING + AddTextComponentString (nicht Sprite-GXT).
+local function setBlipLabel(blip, label)
+    BeginTextCommandSetBlipName('STRING')
+    AddTextComponentString(label)
+    EndTextCommandSetBlipName(blip)
 end
 
 local function spawnBlip(locationId, location)
@@ -139,10 +136,7 @@ local function spawnBlip(locationId, location)
     SetBlipColour(blip, blipData.color)
     SetBlipAsShortRange(blip, blipData.shortRange == true)
     SetBlipHighDetail(blip, true)
-
-    registerBlipTextEntries()
-    BeginTextCommandSetBlipName(BLIP_NAME_GXT)
-    EndTextCommandSetBlipName(blip)
+    setBlipLabel(blip, blipData.label)
 
     spawnedBlips[locationId] = blip
     debugPrint('Blip erstellt:', locationId, blipData.label, ('@ %.2f, %.2f, %.2f'):format(blipData.x, blipData.y, blipData.z))
@@ -164,6 +158,13 @@ local function registerInteraction(entity, location)
     end)
 end
 
+local function registerNativeFallback(location)
+    LiBridgeClientNative.RegisterZone(location, function()
+        openLifeInvader(location)
+    end)
+end
+
+--- NPC-Spawn wie v1.0.0 — kein PlaceEntityOnGroundProperly (verschiebt Peds in MLOs unter die Map).
 local function spawnNpc(locationId, location)
     local x, y, z, heading = LiBridge.Vec4Parts(location.coords)
     if not x then
@@ -181,7 +182,6 @@ local function spawnNpc(locationId, location)
         zOffset = -1.0
     end
 
-    RequestCollisionAtCoord(x, y, z)
     local ped = CreatePed(4, model, x, y, z + zOffset, heading, false, false)
     if not DoesEntityExist(ped) then
         SetModelAsNoLongerNeeded(model)
@@ -189,11 +189,9 @@ local function spawnNpc(locationId, location)
         return nil
     end
 
-    SetEntityAsMissionEntity(ped, true, true)
     SetBlockingOfNonTemporaryEvents(ped, true)
     SetPedCanRagdoll(ped, false)
     SetEntityInvincible(ped, true)
-    PlaceEntityOnGroundProperly(ped)
     FreezeEntityPosition(ped, true)
 
     if location.scenario and location.scenario ~= '' then
@@ -203,9 +201,7 @@ local function spawnNpc(locationId, location)
     SetModelAsNoLongerNeeded(model)
     spawnedPeds[locationId] = ped
     registerInteraction(ped, location)
-    LiBridgeClientNative.RegisterZone(location, function()
-        openLifeInvader(location)
-    end)
+    registerNativeFallback(location)
     debugPrint('NPC gespawnt:', locationId, ('@ %.2f, %.2f, %.2f'):format(x, y, z + zOffset))
     return ped
 end
@@ -233,9 +229,7 @@ local function spawnObject(locationId, location)
     SetModelAsNoLongerNeeded(model)
     spawnedObjects[locationId] = obj
     registerInteraction(obj, location)
-    LiBridgeClientNative.RegisterZone(location, function()
-        openLifeInvader(location)
-    end)
+    registerNativeFallback(location)
     return obj
 end
 
@@ -302,7 +296,6 @@ function EcLifeInvader.World.Cleanup()
     end
 
     clearSpawnedBlips()
-
     LiBridge.Client.ClearNativeZones()
 end
 
@@ -321,12 +314,39 @@ function EcLifeInvader.World.CountEntities()
     return count
 end
 
+function EcLifeInvader.World.IsWorldComplete()
+    local locations = Config.Locations or {}
+
+    for i = 1, #locations do
+        local location = locations[i]
+        if type(location) == 'table' and location.enabled ~= false then
+            local locationId = tostring(location.id or ('loc_%d'):format(i))
+            local locationType = LiBridge.NormalizeLocationType(location)
+
+            if locationType ~= 'item' then
+                if locationType == 'object' then
+                    local obj = spawnedObjects[locationId]
+                    if not obj or not DoesEntityExist(obj) then
+                        return false
+                    end
+                else
+                    local ped = spawnedPeds[locationId]
+                    if not ped or not DoesEntityExist(ped) then
+                        return false
+                    end
+                end
+            end
+        end
+    end
+
+    return true
+end
+
 function EcLifeInvader.World.SpawnAll()
     activeSpawnId = activeSpawnId + 1
     local spawnId = activeSpawnId
 
     EcLifeInvader.World.Cleanup()
-    registerBlipTextEntries()
 
     local locations = Config.Locations or {}
     local count = 0
@@ -348,10 +368,10 @@ function EcLifeInvader.World.SpawnAll()
         end
     end
 
-    debugPrint(('Welt gespawnt: %d Standort(e), %d Blip(s), %d Entity(s)'):format(
+    debugPrint(('Welt gespawnt: %d Standort(e), %d Blip(s), vollständig=%s'):format(
         count,
         blipCount,
-        EcLifeInvader.World.CountEntities()
+        tostring(EcLifeInvader.World.IsWorldComplete())
     ))
 end
 
@@ -366,5 +386,12 @@ RegisterCommand('ec_li_blips_debug', function()
     if EcLifeInvader.World and EcLifeInvader.World.SpawnBlipsOnly then
         blipDebug('manual command trigger')
         EcLifeInvader.World.SpawnBlipsOnly()
+    end
+end, false)
+
+RegisterCommand('ec_li_world_respawn', function()
+    if EcLifeInvader.World and EcLifeInvader.World.SpawnAll then
+        EcLifeInvader.World.SpawnAll()
+        debugPrint('Manueller Welt-Respawn — vollständig:', tostring(EcLifeInvader.World.IsWorldComplete()))
     end
 end, false)
