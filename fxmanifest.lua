@@ -4,10 +4,11 @@ game 'gta5'
 author 'EuroCent'
 name 'ec_lifeinvader'
 description 'LifeInvader — Werbeanzeigen-System für FiveM'
-version '0.1.0'
+version '1.0.0'
 
 shared_scripts {
     'config.lua',
+    'shared/bridge.lua',
 }
 
 ui_page 'html/index.html'
@@ -18,10 +19,36 @@ files {
 }
 
 client_scripts {
+    'framework/client/custom.lua',
+    'framework/client/ox_target.lua',
+    'framework/client/qb_target.lua',
+    'framework/client/esx.lua',
+    'framework/client/native.lua',
+    'framework/client/init.lua',
+    'client/nui.lua',
+    'client/phone.lua',
+    'client/notifications.lua',
+    'client/locations.lua',
     'client/main.lua',
 }
 
+-- Bei mysql-async: '@mysql-async/lib/MySQL.lua' vor server_scripts einbinden.
 server_scripts {
+    'framework/server/mysql.lua',
+    'framework/server/database.lua',
+    'framework/server/custom.lua',
+    'framework/server/esx.lua',
+    'framework/server/qbcore.lua',
+    'framework/server/qbox.lua',
+    'framework/server/finance.lua',
+    'framework/server/inventory.lua',
+    'framework/server/permissions.lua',
+    'framework/server/init.lua',
+    'server/feeds.lua',
+    'server/feeds_actions.lua',
+    'server/account.lua',
+    'server/phone.lua',
+    'server/nui.lua',
     'server/main.lua',
     'server/version_check.lua',
 }

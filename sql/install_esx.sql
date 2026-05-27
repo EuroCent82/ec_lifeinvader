@@ -1,0 +1,108 @@
+-- =============================================================================
+-- ec_lifeinvader — ESX · Datenbank-Schema (6 Tabellen)
+-- Resource: ec_lifeinvader
+-- Framework: ESX (es_extended) · Config.Adapters.framework = 'esx'
+-- Import:   mysql -u user -p datenbank < install_esx.sql
+--
+-- Spalte `identifier` = xPlayer.identifier
+--   Multichar (ESX 1.9+):  char1:110000103fd1bb2
+--   Legacy:                license:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+--
+-- Bridge: LiBridge.Server.GetIdentifier(source) → xPlayer.identifier
+-- Config: Config.Adapters.framework = 'esx'
+-- =============================================================================
+
+SET NAMES utf8mb4;
+SET FOREIGN_KEY_CHECKS = 0;
+
+CREATE TABLE IF NOT EXISTS `lifeinvader` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `identifier` VARCHAR(128) NOT NULL COMMENT 'ESX xPlayer.identifier',
+    `balance` INT NOT NULL DEFAULT 0,
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_lifeinvader_identifier` (`identifier`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `lifeinvader_feeds` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `identifier` VARCHAR(128) NOT NULL COMMENT 'ESX Charakter (xPlayer.identifier)',
+    `author_name` VARCHAR(128) NOT NULL,
+    `title` VARCHAR(64) NOT NULL,
+    `content` VARCHAR(500) NOT NULL,
+    `category` VARCHAR(32) NOT NULL,
+    `phone` VARCHAR(32) NOT NULL COMMENT 'IC-Nummer (ox_inventory / esx_phone)',
+    `anonymous` TINYINT(1) NOT NULL DEFAULT 0,
+    `premium` JSON NULL,
+    `duration_hours` INT UNSIGNED NOT NULL,
+    `price_paid` INT NOT NULL DEFAULT 0,
+    `status` ENUM('active', 'blocked', 'deleted') NOT NULL DEFAULT 'active',
+    `spotlight_until` TIMESTAMP NULL DEFAULT NULL,
+    `anonym_until` TIMESTAMP NULL DEFAULT NULL,
+    `ticker_until` TIMESTAMP NULL DEFAULT NULL,
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `expires_at` TIMESTAMP NOT NULL,
+    PRIMARY KEY (`id`),
+    KEY `idx_lifeinvader_feeds_identifier` (`identifier`),
+    KEY `idx_lifeinvader_feeds_expires` (`expires_at`),
+    KEY `idx_lifeinvader_feeds_category` (`category`),
+    KEY `idx_lifeinvader_feeds_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `lifeinvader_categories` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `slug` VARCHAR(32) NOT NULL,
+    `label` VARCHAR(64) NOT NULL,
+    `icon` VARCHAR(32) NOT NULL DEFAULT 'ellipsis',
+    `enabled` TINYINT(1) NOT NULL DEFAULT 1,
+    `sort_order` INT NOT NULL DEFAULT 0,
+    `created_by` VARCHAR(128) NULL COMMENT 'ESX xPlayer.identifier (Team)',
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_lifeinvader_categories_slug` (`slug`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `lifeinvader_vouchers` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `code` VARCHAR(32) NOT NULL COMMENT 'LIV-1234-5678',
+    `value` INT NOT NULL,
+    `expires_at` TIMESTAMP NULL DEFAULT NULL,
+    `max_uses` INT UNSIGNED NULL DEFAULT NULL,
+    `uses_count` INT UNSIGNED NOT NULL DEFAULT 0,
+    `enabled` TINYINT(1) NOT NULL DEFAULT 1,
+    `created_by` VARCHAR(128) NOT NULL COMMENT 'ESX xPlayer.identifier (Team)',
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_lifeinvader_vouchers_code` (`code`),
+    KEY `idx_lifeinvader_vouchers_expires` (`expires_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `lifeinvader_voucher_redemptions` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `voucher_id` INT UNSIGNED NOT NULL,
+    `identifier` VARCHAR(128) NOT NULL COMMENT 'ESX xPlayer.identifier',
+    `redeemed_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_lifeinvader_voucher_player` (`voucher_id`, `identifier`),
+    KEY `idx_lifeinvader_voucher_redemptions_identifier` (`identifier`),
+    CONSTRAINT `fk_lifeinvader_voucher_redemptions_voucher`
+        FOREIGN KEY (`voucher_id`) REFERENCES `lifeinvader_vouchers` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `lifeinvader_refunds` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `feed_id` INT UNSIGNED NULL,
+    `identifier` VARCHAR(128) NOT NULL COMMENT 'ESX xPlayer.identifier (Empfänger)',
+    `amount` INT NOT NULL,
+    `reason` VARCHAR(255) NULL,
+    `issued_by` VARCHAR(128) NOT NULL COMMENT 'ESX xPlayer.identifier (Team)',
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `idx_lifeinvader_refunds_feed` (`feed_id`),
+    KEY `idx_lifeinvader_refunds_identifier` (`identifier`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+SET FOREIGN_KEY_CHECKS = 1;
