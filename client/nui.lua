@@ -7,6 +7,7 @@ local pendingDeposits = {}
 local pendingContacts = {}
 local pendingPostAds = {}
 local pendingDeleteAds = {}
+local pendingTeamSlots = {}
 
 RegisterNetEvent('ec_lifeinvader:client:openNui', function(payload)
     nuiOpen = true
@@ -21,6 +22,10 @@ RegisterNetEvent('ec_lifeinvader:client:openNui', function(payload)
         ticker = payload.ticker,
         admin = payload.admin,
         uiConfig = payload.uiConfig,
+        adSlots = payload.adSlots,
+        adSlotPolicy = payload.adSlotPolicy,
+        lang = payload.lang,
+        locale = payload.locale,
     })
 end)
 
@@ -127,6 +132,34 @@ RegisterNUICallback('deleteAd', function(data, cb)
         end
     end)
 end)
+
+RegisterNetEvent('ec_lifeinvader:client:teamGrantAdSlotsResult', function(requestId, result)
+    local cb = pendingTeamSlots[requestId]
+    if not cb then
+        return
+    end
+
+    pendingTeamSlots[requestId] = nil
+    cb(result or { ok = false, error = 'empty_response' })
+end)
+
+local function registerTeamSlotCallback(name, serverEvent)
+    RegisterNUICallback(name, function(data, cb)
+        local requestId = ('%s_%s'):format(GetGameTimer(), math.random(10000, 99999))
+        pendingTeamSlots[requestId] = cb
+        TriggerServerEvent(serverEvent, requestId, data and data.identifier, data and data.amount)
+
+        SetTimeout(15000, function()
+            if pendingTeamSlots[requestId] then
+                pendingTeamSlots[requestId]({ ok = false, error = 'timeout' })
+                pendingTeamSlots[requestId] = nil
+            end
+        end)
+    end)
+end
+
+registerTeamSlotCallback('teamLookupAdSlots', 'ec_lifeinvader:server:teamLookupAdSlots')
+registerTeamSlotCallback('teamGrantAdSlots', 'ec_lifeinvader:server:teamGrantAdSlots')
 
 RegisterNUICallback('contact', function(data, cb)
     local requestId = ('%s_%s'):format(GetGameTimer(), math.random(10000, 99999))

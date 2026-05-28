@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS `lifeinvader` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `identifier` VARCHAR(128) NOT NULL COMMENT 'ESX xPlayer.identifier',
     `balance` INT NOT NULL DEFAULT 0,
+    `ad_slot_bonus` INT NOT NULL DEFAULT 0 COMMENT 'Zusätzliche aktive Anzeigen-Slots (Team)',
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),

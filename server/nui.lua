@@ -26,6 +26,9 @@ local function buildOpenPayload(source, feedData)
             features = adminCfg.features or {},
         },
         uiConfig = LiBridgeServerFeeds.BuildUiConfig(),
+        adSlotPolicy = LiBridgeServerAdSlots.BuildPolicyForUi(),
+        lang = LiLocales.GetLanguage(),
+        locale = LiLocales.GetUiTable(),
     }
 end
 
@@ -43,7 +46,11 @@ RegisterNetEvent('ec_lifeinvader:server:requestOpen', function(locationId)
 
         LiBridgeServerAccount.GetBalance(identifier, function(balance)
             payload.player.money = balance
-            TriggerClientEvent('ec_lifeinvader:client:openNui', src, payload)
+
+            LiBridgeServerAdSlots.GetPlayerAdSlotInfo(identifier, function(slotInfo)
+                payload.adSlots = slotInfo
+                TriggerClientEvent('ec_lifeinvader:client:openNui', src, payload)
+            end)
         end)
     end)
 end)

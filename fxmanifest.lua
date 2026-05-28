@@ -4,10 +4,12 @@ game 'gta5'
 author 'EuroCent'
 name 'ec_lifeinvader'
 description 'LifeInvader — Werbeanzeigen-System für FiveM'
-version '1.1.18'
+version '1.1.20'
 
 shared_scripts {
     'config.lua',
+    'locales/*.lua',
+    'shared/locales.lua',
     'shared/bridge.lua',
 }
 
@@ -45,8 +47,10 @@ server_scripts {
     'framework/server/inventory.lua',
     'framework/server/permissions.lua',
     'framework/server/init.lua',
+    'server/ad_slots.lua',
     'server/feeds.lua',
     'server/feeds_actions.lua',
+    'server/team_slots.lua',
     'server/account.lua',
     'server/phone.lua',
     'server/nui.lua',

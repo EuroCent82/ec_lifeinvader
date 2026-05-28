@@ -122,6 +122,29 @@ local function respondPost(src, requestId, payload)
     TriggerClientEvent('ec_lifeinvader:client:postAdResult', src, requestId, payload)
 end
 
+local function respondPostWithSlots(identifier, src, requestId, payload)
+    LiBridgeServerAdSlots.GetPlayerAdSlotInfo(identifier, function(slotInfo)
+        payload.adSlots = slotInfo
+        respondPost(src, requestId, payload)
+    end)
+end
+
+local function requireAdSlot(identifier, src, requestId, onAllowed)
+    LiBridgeServerAdSlots.CanPostNewAd(identifier, function(canPost, active, max)
+        if not canPost then
+            respondPost(src, requestId, {
+                ok = false,
+                error = 'ad_slot_limit',
+                active = active,
+                max = max,
+            })
+            return
+        end
+
+        onAllowed()
+    end)
+end
+
 local function respondDelete(src, requestId, payload)
     TriggerClientEvent('ec_lifeinvader:client:deleteAdResult', src, requestId, payload)
 end
@@ -248,7 +271,7 @@ RegisterNetEvent('ec_lifeinvader:server:postAd', function(requestId, data)
 
             LiBridgeServerFeeds.GetActiveAds(identifier, function(ads)
                 LiBridgeServerFeeds.GetPlayerFeedHistory(identifier, function(history)
-                    respondPost(src, requestId, {
+                    respondPostWithSlots(identifier, src, requestId, {
                         ok = true,
                         balance = balance,
                         ads = ads,
@@ -335,7 +358,7 @@ RegisterNetEvent('ec_lifeinvader:server:postAd', function(requestId, data)
 
                         LiBridgeServerFeeds.GetActiveAds(identifier, function(ads)
                             LiBridgeServerFeeds.GetPlayerFeedHistory(identifier, function(history)
-                                respondPost(src, requestId, {
+                                respondPostWithSlots(identifier, src, requestId, {
                                     ok = true,
                                     balance = balance,
                                     ads = ads,
@@ -364,13 +387,17 @@ RegisterNetEvent('ec_lifeinvader:server:postAd', function(requestId, data)
                     respondPost(src, requestId, { ok = false, error = 'renew_invalid' })
                     return
                 end
-                finishPost(grossPrice)
+                requireAdSlot(identifier, src, requestId, function()
+                    finishPost(grossPrice)
+                end)
             end
         )
         return
     end
 
-    finishPost(grossPrice)
+    requireAdSlot(identifier, src, requestId, function()
+        finishPost(grossPrice)
+    end)
 end)
 
 RegisterNetEvent('ec_lifeinvader:server:deleteAd', function(requestId, adId)
@@ -410,13 +437,16 @@ RegisterNetEvent('ec_lifeinvader:server:deleteAd', function(requestId, adId)
                 "UPDATE lifeinvader_feeds SET status = 'deleted' WHERE id = ?",
                 { adId },
                 function()
-                    LiBridgeServerFeeds.GetActiveAds(identifier, function(ads)
-                        LiBridgeServerFeeds.GetPlayerFeedHistory(identifier, function(history)
-                            respondDelete(src, requestId, {
-                                ok = true,
-                                ads = ads,
-                                history = history,
-                            })
+                    LiBridgeServerAdSlots.GetPlayerAdSlotInfo(identifier, function(slotInfo)
+                        LiBridgeServerFeeds.GetActiveAds(identifier, function(ads)
+                            LiBridgeServerFeeds.GetPlayerFeedHistory(identifier, function(history)
+                                respondDelete(src, requestId, {
+                                    ok = true,
+                                    ads = ads,
+                                    history = history,
+                                    adSlots = slotInfo,
+                                })
+                            end)
                         end)
                     end)
                 end

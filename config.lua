@@ -5,6 +5,7 @@
 ]]
 
 Config = {}
+Config.Lang = 'de'
 
 --------------------------------------------------------------------------------
 -- 1) Adapter / Bridge
@@ -505,6 +506,24 @@ Config.PremiumFeatures = {
 ]]
 
 --------------------------------------------------------------------------------
+-- 13b) Anzeigen-Slots — max. gleichzeitig aktive Anzeigen pro Spieler
+--
+--     defaultMax     → Standard ohne Team-Bonus (z. B. 2)
+--     minimum        → Untergrenze des effektiven Limits (auch mit Bonus)
+--     maximum        → Obergrenze des effektiven Limits (auch mit Team-Bonus)
+--     teamCanAdjust  → Team darf pro Spieler Bonus-Slots vergeben (+1 / +8)
+--     teamGrantOptions → erlaubte Vergabe-Stufen (nur diese Werte)
+--------------------------------------------------------------------------------
+
+Config.AdSlots = {
+    defaultMax = 2,
+    minimum = 1,
+    maximum = 20,
+    teamCanAdjust = true,
+    teamGrantOptions = { 1, 8 },
+}
+
+--------------------------------------------------------------------------------
 -- 14) Team-Panel (Admin) — nur mit Config.Permissions.team
 --
 --     Berechtigte sehen im Tablet einen extra Tab „Team“ / Admin-Panel:
@@ -523,6 +542,7 @@ Config.Admin = {
         vouchers = true,
         ads = true,
         refunds = true,
+        adSlots = true,
     },
 }
 

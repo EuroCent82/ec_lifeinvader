@@ -217,14 +217,14 @@ function LiBridgeServerDatabase.Install(cb)
     end)
 end
 
-function LiBridgeServerDatabase.EnsureSchemaPatches(cb)
+local function ensureColumn(tableName, columnName, alterSql, label, cb)
     cb = cb or function() end
 
     LiBridge.MySQL.Query(
-        [[SELECT COUNT(*) AS count FROM information_schema.columns
+        ([[SELECT COUNT(*) AS count FROM information_schema.columns
           WHERE table_schema = DATABASE()
-            AND table_name = 'lifeinvader_feeds'
-            AND column_name = 'ticker_until']],
+            AND table_name = '%s'
+            AND column_name = '%s']]):format(tableName, columnName),
         {},
         function(result)
             local count = 0
@@ -237,13 +237,29 @@ function LiBridgeServerDatabase.EnsureSchemaPatches(cb)
                 return
             end
 
-            LiBridge.MySQL.Query(
-                'ALTER TABLE lifeinvader_feeds ADD COLUMN ticker_until TIMESTAMP NULL DEFAULT NULL AFTER anonym_until',
-                {},
-                function()
-                    LiBridge.Debug('Schema-Patch: ticker_until Spalte hinzugefügt')
-                    cb(true)
-                end
+            LiBridge.MySQL.Query(alterSql, {}, function()
+                LiBridge.Debug(('Schema-Patch: %s Spalte hinzugefügt'):format(label))
+                cb(true)
+            end)
+        end
+    )
+end
+
+function LiBridgeServerDatabase.EnsureSchemaPatches(cb)
+    cb = cb or function() end
+
+    ensureColumn(
+        'lifeinvader_feeds',
+        'ticker_until',
+        'ALTER TABLE lifeinvader_feeds ADD COLUMN ticker_until TIMESTAMP NULL DEFAULT NULL AFTER anonym_until',
+        'ticker_until',
+        function()
+            ensureColumn(
+                'lifeinvader',
+                'ad_slot_bonus',
+                'ALTER TABLE lifeinvader ADD COLUMN ad_slot_bonus INT NOT NULL DEFAULT 0 AFTER balance',
+                'ad_slot_bonus',
+                cb
             )
         end
     )
