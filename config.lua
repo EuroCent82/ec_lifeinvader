@@ -88,7 +88,7 @@ Config.Adapters = {
 --------------------------------------------------------------------------------
 
 Config.Interaction = {
-    mode = 'native',
+    mode = 'target',
     nativeKey = 38,           --- Control-ID (38 = E)
     nativeKeyLabel = 'E',     --- Anzeige in der Hilfe
     nativeDistance = 2.5,     --- Meter
@@ -247,17 +247,17 @@ Config.Withdraw = { cash = true, bank = false }
 -- 7) Infrastruktur
 --------------------------------------------------------------------------------
 
---- true = zusätzliche Client-Konsolen-Ausgaben (Spawn, Bridge, NUI)
+--- true = zusätzliche Client-Konsolen-Ausgaben (Spawn, Bridge, NUI) + Blip-Test-Commands
 Config.Debug = false
 
---- Welt-Spawn: klare Server-Konsole (Blips/NPCs + Koordinaten)
+--- Welt-Spawn: Server-Konsole (Blips/NPCs + Koordinaten) — für Live: false
 Config.World = {
-    debug = true,
+    debug = false,
 }
 
 --- Demo-Daten beim Start (fake_esx.sql / fake_qbcore.sql / fake_qbox.sql)
---- Nur wenn lifeinvader_categories noch leer ist.
-Config.fake = true
+--- Nur wenn lifeinvader_categories noch leer ist. Dev/Test: true, Live: false
+Config.fake = false
 
 --- Versionsvergleich mit GitHub-Releases (öffentliches Repo ec_lifeinvader)
 Config.VersionCheck = {
@@ -283,7 +283,6 @@ Config.VersionCheck = {
 
 Config.Blip = {
     enabled = true,
-    debug = false,
     sprite = 225,
     color = 1,
     scale = 0.85,
@@ -372,18 +371,20 @@ Config.Locations = {
 ]]
 
 --------------------------------------------------------------------------------
--- 10) Öffnungszeiten — wann LifeInvader nutzbar ist
+-- 10) Öffnungszeiten — GEPLANT (noch nicht im Code implementiert)
 --
---     Config.OpenHours = nil  → 24/7
---     from / to einzeln nil   → keine Grenze auf dieser Seite
+--     Wenn umgesetzt: nil = 24/7, sonst from/to (z. B. '08:00' / '20:00')
 --------------------------------------------------------------------------------
+
+Config.OpenHours = nil
+
+--[[  Beispiel für spätere Implementierung:
 
 Config.OpenHours = {
     from = '08:00',
     to = '20:00',
 }
-
---- Config.OpenHours = nil
+]]
 
 --------------------------------------------------------------------------------
 -- 10b) Live-Ticker — Lauftext unter der Kopfzeile
@@ -426,20 +427,14 @@ Config.FeedNotifications = {
 }
 
 --------------------------------------------------------------------------------
--- 11) Kategorien — Feed-Filter & Formular (beliebig erweiterbar)
+-- 11) Kategorien — aus der Datenbank (lifeinvader_categories), nicht aus Config
 --
---     id    → interner Key (DB, Filter)
---     label → Anzeige in der UI
---     icon  → FontAwesome-Name (ohne fa-)
+--     Anlegen/Bearbeiten: Team-Panel im Tablet oder SQL
+--     Erst-Installation / Demo: sql/fake_*.sql (wenn Config.fake = true)
+--
+--     Seed-Vorlage (nur Referenz — wird vom Code nicht gelesen):
+--       verkauf, dienstleistungen, jobs, events, sonstiges
 --------------------------------------------------------------------------------
-
-Config.Categories = {
-    { id = 'verkauf',          label = 'Verkauf',          icon = 'tags' },
-    { id = 'dienstleistungen', label = 'Dienstleistungen', icon = 'handshake' },
-    { id = 'jobs',             label = 'Jobs',             icon = 'briefcase' },
-    { id = 'events',           label = 'Events',           icon = 'calendar-days' },
-    { id = 'sonstiges',        label = 'Sonstiges',        icon = 'ellipsis' },
-}
 
 --------------------------------------------------------------------------------
 -- 12) Anzeigen schalten — Laufzeit, Text, Limits

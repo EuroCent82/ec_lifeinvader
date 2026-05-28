@@ -71,6 +71,14 @@ Alle Optionen sind in **`config.lua`** und **`readme_config.md`** dokumentiert (
 
 ---
 
+## Version 1.1.13
+
+- Cleanup: ungenutzter Code entfernt, Config bereinigt
+- Kategorien nur aus DB (kein `Config.Categories` mehr)
+- `Config.OpenHours` geplant, aktuell `nil`
+- Blip-Test (`/ec_li_blip_test`) nur bei `Config.Debug = true`
+- Live-Defaults: `Config.fake = false`, `Config.World.debug = false`
+
 ## Version 1.1.12
 
 - Blip-Name-Guard fuer problematische GameBuilds (z. B. b3407)

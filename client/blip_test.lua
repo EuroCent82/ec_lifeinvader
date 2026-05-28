@@ -1,5 +1,9 @@
+if Config.Debug ~= true then
+    return
+end
+
 --[[
-    Isolierter Blip-Test — KEIN Config, KEIN locations.lua, KEIN SpawnAll.
+    Isolierter Blip-Test — nur bei Config.Debug = true
     Vergleich: nxt_driving_school/client/npc.lua Zeile 677–686
 
     /ec_li_blip_test        → gelbes Haus (Sprite 40), Name „Hallo“ an deiner Position

@@ -1,3 +1,7 @@
+if Config.Debug ~= true then
+    return
+end
+
 RegisterNetEvent('ec_lifeinvader:server:blipTestLog', function(message)
     local src = source
     local name = src > 0 and (GetPlayerName(src) or ('ID ' .. src)) or 'Server'

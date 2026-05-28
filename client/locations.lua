@@ -418,26 +418,6 @@ function EcLifeInvader.World.ReportToServer(reason)
     })
 end
 
-function EcLifeInvader.World.SpawnBlipsOnly()
-    for locationId, blip in pairs(spawnedBlips) do
-        if DoesBlipExist(blip) then
-            RemoveBlip(blip)
-        end
-        spawnedBlips[locationId] = nil
-    end
-
-    local locations = Config.Locations or {}
-    for i = 1, #locations do
-        local location = locations[i]
-        if type(location) == 'table' and location.enabled ~= false then
-            local locationId = tostring(location.id or ('loc_%d'):format(i))
-            spawnBlip(locationId, location)
-        end
-    end
-
-    EcLifeInvader.World.ReportToServer('SpawnBlipsOnly')
-end
-
 function EcLifeInvader.World.Cleanup()
     for locationId, ped in pairs(spawnedPeds) do
         if DoesEntityExist(ped) then
