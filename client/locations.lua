@@ -19,6 +19,93 @@ local function debugPrint(...)
     LiBridge.Debug(...)
 end
 
+local warnedBlipNaming = false
+
+local function getGameBuildNumberSafe()
+    if type(GetGameBuildNumber) ~= 'function' then
+        return nil
+    end
+
+    local ok, build = pcall(GetGameBuildNumber)
+    if not ok then
+        return nil
+    end
+
+    local buildNumber = tonumber(build)
+    if buildNumber and buildNumber > 0 then
+        return buildNumber
+    end
+    return nil
+end
+
+local function isBuildBlocked(disabledBuilds, build)
+    if type(disabledBuilds) ~= 'table' or not build then
+        return false
+    end
+
+    if disabledBuilds[build] == true then
+        return true
+    end
+
+    for i = 1, #disabledBuilds do
+        if tonumber(disabledBuilds[i]) == build then
+            return true
+        end
+    end
+
+    return false
+end
+
+local function shouldApplyBlipName()
+    local defaults = Config.Blip or {}
+    local mode = tostring(defaults.nameMode or 'auto'):lower()
+    local build = getGameBuildNumberSafe()
+    local disabledBuilds = defaults.disableNameForBuilds or { [3407] = true }
+
+    if mode == 'none' then
+        if not warnedBlipNaming then
+            warnedBlipNaming = true
+            debugPrint('Blip-Namen deaktiviert (Config.Blip.nameMode=none).')
+        end
+        return false
+    end
+
+    if mode == 'native' then
+        return true
+    end
+
+    if isBuildBlocked(disabledBuilds, build) then
+        if not warnedBlipNaming then
+            warnedBlipNaming = true
+            debugPrint(('Blip-Namen wegen Build %s deaktiviert (Config.Blip.nameMode=auto).'):format(tostring(build)))
+        end
+        return false
+    end
+
+    return true
+end
+
+local function safeSetBlipName(blip, label)
+    if not blip or blip == 0 or not DoesBlipExist(blip) then
+        debugPrint('Blip-Name übersprungen: ungültiger Handle', tostring(blip))
+        return false
+    end
+
+    if not shouldApplyBlipName() then
+        return false
+    end
+
+    local safeLabel = tostring(label or '')
+    if safeLabel == '' then
+        safeLabel = 'LifeInvader'
+    end
+
+    BeginTextCommandSetBlipName('STRING')
+    AddTextComponentString(safeLabel)
+    EndTextCommandSetBlipName(blip)
+    return true
+end
+
 local function loadModel(model)
     local hash = type(model) == 'number' and model or joaat(model)
     if not IsModelInCdimage(hash) then
@@ -115,9 +202,7 @@ local function spawnBlip(locationId, location)
     SetBlipScale(blip, blipData.scale)
     SetBlipColour(blip, blipData.color)
     SetBlipAsShortRange(blip, blipData.shortRange == true)
-    BeginTextCommandSetBlipName('STRING')
-    AddTextComponentString(blipLabel)
-    EndTextCommandSetBlipName(blip)
+    safeSetBlipName(blip, blipLabel)
 
     spawnedBlips[locationId] = blip
     debugPrint('Blip erstellt:', locationId, blipLabel, ('sprite=%s @ %.2f, %.2f, %.2f'):format(

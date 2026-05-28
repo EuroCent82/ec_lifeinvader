@@ -20,19 +20,39 @@ local function logTest(message)
     TriggerServerEvent('ec_lifeinvader:server:blipTestLog', message)
 end
 
+local function safeSetBlipName(blip, label)
+    if not blip or blip == 0 or not DoesBlipExist(blip) then
+        logTest(('Blip-Name übersprungen: ungültiger Handle (%s)'):format(tostring(blip)))
+        return false
+    end
+
+    local safeLabel = tostring(label or '')
+    if safeLabel == '' then
+        safeLabel = 'Hallo'
+    end
+
+    BeginTextCommandSetBlipName('STRING')
+    AddTextComponentString(safeLabel)
+    EndTextCommandSetBlipName(blip)
+    return true
+end
+
 --- Minimaler Blip — exakt die Native-Reihenfolge aus nxt_driving_school.
 local function createMinimalBlip(x, y, z, sprite, color, scale, label)
     removeTestBlip()
 
     local blip = AddBlipForCoord(x, y, z)
+    if not blip or blip == 0 or not DoesBlipExist(blip) then
+        logTest('AddBlipForCoord hat keinen gültigen Blip geliefert.')
+        return nil
+    end
+
     SetBlipSprite(blip, sprite)
     SetBlipDisplay(blip, 4)
     SetBlipScale(blip, scale)
     SetBlipColour(blip, color)
     SetBlipAsShortRange(blip, false)
-    BeginTextCommandSetBlipName('STRING')
-    AddTextComponentString(label)
-    EndTextCommandSetBlipName(blip)
+    safeSetBlipName(blip, label)
 
     testBlipHandle = blip
     return blip

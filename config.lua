@@ -289,6 +289,11 @@ Config.Blip = {
     scale = 0.85,
     shortRange = false,
     label = 'LifeInvader',
+    --- auto | native | none
+    --- auto: deaktiviert Blip-Namen auf problematischen Builds (siehe disableNameForBuilds)
+    nameMode = 'auto',
+    --- map (oder Liste) mit Game-Builds, auf denen EndTextCommandSetBlipName übersprungen wird
+    disableNameForBuilds = { [3407] = true },
 }
 
 --------------------------------------------------------------------------------
