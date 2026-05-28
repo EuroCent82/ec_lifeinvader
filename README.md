@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/EuroCent82/ec_lifeinvader/releases"><img src="https://img.shields.io/badge/Version-1.1.12-ff3b30?style=for-the-badge" alt="Version 1.1.12" /></a>
+  <a href="https://github.com/EuroCent82/ec_lifeinvader/releases"><img src="https://img.shields.io/badge/Version-1.1.14-ff3b30?style=for-the-badge" alt="Version 1.1.14" /></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="MIT License" /></a>
 </p>
 
@@ -68,6 +68,36 @@ Manueller SQL-Import: `sql/install_esx.sql` / `install_qbcore.sql` / `install_qb
 ## Konfiguration
 
 Alle Optionen sind in **`config.lua`** und **`readme_config.md`** dokumentiert (Standorte, Preise, Permissions, Fake-Demo-Daten, Blips).
+
+---
+
+## WICHTIG: Karten-Blip & FiveM Game Build
+
+> **Unbedingt lesen**, bevor du Blip-Sprite oder Legenden-Namen als Bug meldest.
+
+LifeInvader nutzt **Sprite 77** (rotes **„L“** auf der Karte). Der Name **„LifeInvader“** in der Legende kommt aus `Config.Blip.label` via `EndTextCommandSetBlipName`.
+
+### Auf Game Build `b3407` (viele aktuelle FiveM-Installationen)
+
+- **Legende zeigt oft „Lester“** (oder anderen GTA-Sprite-Text) statt **„LifeInvader“**.
+- **Ursache:** Auf `b3407` crasht die Native `EndTextCommandSetBlipName`. Die Resource setzt den Namen deshalb **absichtlich nicht** (`Config.Blip.nameMode = 'auto'`, Build `3407` in `disableNameForBuilds`).
+- **Das rote L auf der Karte ist korrekt** — nur der **Text in der Legende** fällt auf den GTA-Standard zurück.
+- **Das ist kein Fehler der Standort-/Blip-Logik** — lokal reproduzierbares, build-spezifisches Native-Problem.
+
+### Auf Build `b3323` (Beispiel: unauffällig)
+
+- Custom-Name **„LifeInvader“** in der Legende funktioniert mit derselben Resource.
+
+### Einstellungen in `config.lua`
+
+| Option | Bedeutung |
+| --- | --- |
+| `sprite = 77` | Rotes L (LifeInvader-Style) |
+| `nameMode = 'auto'` | Namen auf problematischen Builds überspringen (empfohlen) |
+| `disableNameForBuilds = { [3407] = true }` | Standard: Schutz vor Crash auf `b3407` |
+| `nameMode = 'native'` | Immer Namen setzen — **Crash-Risiko auf `b3407`** |
+
+Eigenen Build prüfen: Client-Konsole / Server — FiveM **Game Build**-Nummer (z. B. `3407`).
 
 ---
 
