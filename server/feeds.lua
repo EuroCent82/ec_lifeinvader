@@ -5,22 +5,77 @@ function LiBridgeServerFeeds.FormatLivId(id)
     return ('LIV-%s'):format(tostring(id or 0))
 end
 
+local function parseDateTimeToUnix(value)
+    if not value then
+        return nil
+    end
+
+    if type(value) == 'number' then
+        if value > 1e12 then
+            return math.floor(value / 1000)
+        end
+        return math.floor(value)
+    end
+
+    local text = tostring(value)
+    local y, m, d, h, min, sec = text:match('(%d+)-(%d+)-(%d+)%s+(%d+):(%d+):(%d+)')
+    if not y then
+        y, m, d, h, min = text:match('(%d+)-(%d+)-(%d+)%s+(%d+):(%d+)')
+        sec = 0
+    end
+
+    if y then
+        return os.time({
+            year = tonumber(y),
+            month = tonumber(m),
+            day = tonumber(d),
+            hour = tonumber(h),
+            min = tonumber(min),
+            sec = tonumber(sec) or 0,
+        })
+    end
+
+    return nil
+end
+
 local function formatDateTimeLabel(value)
     if not value then
         return '—'
     end
 
     if type(value) == 'number' then
-        return os.date('%d.%m.%Y %H:%M', value)
+        return os.date('%d.%m.%Y %H:%M:%S', value > 1e12 and math.floor(value / 1000) or value)
     end
 
     local text = tostring(value)
-    local y, m, d, h, min = text:match('(%d+)-(%d+)-(%d+)%s+(%d+):(%d+)')
+    local y, m, d, h, min, sec = text:match('(%d+)-(%d+)-(%d+)%s+(%d+):(%d+):(%d+)')
+    if not y then
+        y, m, d, h, min = text:match('(%d+)-(%d+)-(%d+)%s+(%d+):(%d+)')
+        sec = '00'
+    end
     if y then
-        return ('%s.%s.%s %s:%s'):format(d, m, y, h, min)
+        return ('%s.%s.%s %s:%s:%s'):format(d, m, y, h, min, sec or '00')
     end
 
     return text
+end
+
+local function expiresAtPayload(value)
+    local unix = parseDateTimeToUnix(value)
+    if not unix then
+        return nil, nil
+    end
+    return unix * 1000, formatDateTimeLabel(value)
+end
+
+local function authorFields(row)
+    local realName = row.author_name or 'Unbekannt'
+    local isAnonymous = row.anonymous == 1 or row.anonymous == true
+    return {
+        author = isAnonymous and 'Anonym' or realName,
+        authorName = realName,
+        wasAnonymous = isAnonymous,
+    }
 end
 
 local function resolveFeedStatus(row)
@@ -222,10 +277,9 @@ function LiBridgeServerFeeds.FormatAdRow(row, viewerIdentifier)
         spotlightActive = true
     end
 
-    local author = row.author_name or 'Unbekannt'
-    if row.anonymous == 1 or row.anonymous == true then
-        author = 'Anonym'
-    end
+    local authors = authorFields(row)
+    local expiresAt, expiresAtLabel = expiresAtPayload(row.expires_at)
+    local isMine = viewerIdentifier ~= nil and row.identifier == viewerIdentifier
 
     return {
         id = row.id,
@@ -233,24 +287,26 @@ function LiBridgeServerFeeds.FormatAdRow(row, viewerIdentifier)
         title = row.title,
         content = row.content,
         category = row.category,
-        author = author,
+        author = authors.author,
+        authorName = authors.authorName,
+        wasAnonymous = authors.wasAnonymous,
         phone = row.phone or '',
         timestamp = relativeTimestamp(row.created_at),
         premium = spotlightActive or (premium and premium.spotlight ~= nil),
-        isMine = viewerIdentifier ~= nil and row.identifier == viewerIdentifier,
+        isMine = isMine,
         ownerIdentifier = row.identifier,
+        expiresAt = expiresAt,
+        expiresAtLabel = expiresAtLabel,
+        createdAtLabel = formatDateTimeLabel(row.created_at),
     }
 end
 
 function LiBridgeServerFeeds.FormatHistoryRow(row)
     local status = resolveFeedStatus(row)
-    local author = row.author_name or 'Unbekannt'
-    if row.anonymous == 1 or row.anonymous == true then
-        author = 'Anonym'
-    end
-
+    local authors = authorFields(row)
     local premium = decodePremium(row.premium)
     local spotlightActive = row.spotlight_until and true or false
+    local expiresAt, expiresAtLabel = expiresAtPayload(row.expires_at)
 
     return {
         id = row.id,
@@ -258,13 +314,16 @@ function LiBridgeServerFeeds.FormatHistoryRow(row)
         title = row.title,
         content = row.content,
         category = row.category,
-        author = author,
+        author = authors.author,
+        authorName = authors.authorName,
+        wasAnonymous = authors.wasAnonymous,
         phone = row.phone or '',
         timestamp = relativeTimestamp(row.created_at),
         premium = spotlightActive or (premium and premium.spotlight ~= nil),
         status = status,
         createdAtLabel = formatDateTimeLabel(row.created_at),
-        expiresAtLabel = formatDateTimeLabel(row.expires_at),
+        expiresAt = expiresAt,
+        expiresAtLabel = expiresAtLabel or formatDateTimeLabel(row.expires_at),
         durationLabel = durationLabelFromHours(row.duration_hours),
         durationHours = row.duration_hours,
         pricePaid = row.price_paid or 0,

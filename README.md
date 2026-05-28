@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/EuroCent82/ec_lifeinvader/releases"><img src="https://img.shields.io/badge/Version-1.1.14-ff3b30?style=for-the-badge" alt="Version 1.1.14" /></a>
+  <a href="https://github.com/EuroCent82/ec_lifeinvader/releases"><img src="https://img.shields.io/badge/Version-1.1.15-ff3b30?style=for-the-badge" alt="Version 1.1.15" /></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="MIT License" /></a>
 </p>
 
@@ -100,6 +100,11 @@ LifeInvader nutzt **Sprite 77** (rotes **„L“** auf der Karte). Der Name **�
 Eigenen Build prüfen: Client-Konsole / Server — FiveM **Game Build**-Nummer (z. B. `3407`).
 
 ---
+
+## Version 1.1.15
+
+- **Meine Anzeigen:** Name, Ablaufdatum inkl. Uhrzeit, Live-Countdown
+- **Buchungen:** Ablaufdatum in Liste & Detail; bei Anonym der echte Name nur in der Buchungsansicht
 
 ## Version 1.1.14
 
