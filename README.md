@@ -101,6 +101,10 @@ Eigenen Build prüfen: Client-Konsole / Server — FiveM **Game Build**-Nummer (
 
 ---
 
+## Version 1.1.16
+
+- **Fix Buchungen:** Historie war beim Öffnen leer — `history` fehlte in der NUI-Nachricht (Daten kommen aus `lifeinvader_feeds`, keine Extra-Tabelle nötig)
+
 ## Version 1.1.15
 
 - **Meine Anzeigen:** Name, Ablaufdatum inkl. Uhrzeit, Live-Countdown

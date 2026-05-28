@@ -15,6 +15,7 @@ RegisterNetEvent('ec_lifeinvader:client:openNui', function(payload)
         action = 'open',
         player = payload.player,
         ads = payload.ads,
+        history = payload.history,
         categories = payload.categories,
         permissions = payload.permissions,
         ticker = payload.ticker,
