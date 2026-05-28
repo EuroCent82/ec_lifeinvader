@@ -279,6 +279,7 @@ function LiBridgeServerFeeds.FormatAdRow(row, viewerIdentifier)
 
     local authors = authorFields(row)
     local expiresAt, expiresAtLabel = expiresAtPayload(row.expires_at)
+    local createdAtUnix = parseDateTimeToUnix(row.created_at)
     local isMine = viewerIdentifier ~= nil and row.identifier == viewerIdentifier
 
     return {
@@ -297,7 +298,11 @@ function LiBridgeServerFeeds.FormatAdRow(row, viewerIdentifier)
         ownerIdentifier = row.identifier,
         expiresAt = expiresAt,
         expiresAtLabel = expiresAtLabel,
+        createdAt = createdAtUnix and (createdAtUnix * 1000) or nil,
         createdAtLabel = formatDateTimeLabel(row.created_at),
+        pricePaid = tonumber(row.price_paid) or 0,
+        durationHours = tonumber(row.duration_hours),
+        premiumDraft = premium,
     }
 end
 
@@ -322,6 +327,10 @@ function LiBridgeServerFeeds.FormatHistoryRow(row)
         premium = spotlightActive or (premium and premium.spotlight ~= nil),
         status = status,
         createdAtLabel = formatDateTimeLabel(row.created_at),
+        createdAt = (function()
+            local unix = parseDateTimeToUnix(row.created_at)
+            return unix and (unix * 1000) or nil
+        end)(),
         expiresAt = expiresAt,
         expiresAtLabel = expiresAtLabel or formatDateTimeLabel(row.expires_at),
         durationLabel = durationLabelFromHours(row.duration_hours),
@@ -341,6 +350,51 @@ function LiBridgeServerFeeds.CanRenewRow(row, identifier)
 
     local status = resolveFeedStatus(row)
     return status == 'expired' or status == 'deleted'
+end
+
+function LiBridgeServerFeeds.CanExtendRow(row, identifier)
+    if not row or not identifier or row.identifier ~= identifier then
+        return false
+    end
+
+    if row.status ~= 'active' then
+        return false
+    end
+
+    local expiresAt = parseDateTimeToUnix(row.expires_at)
+    if not expiresAt or expiresAt <= os.time() then
+        return false
+    end
+
+    return true
+end
+
+--- Anteilige Gutschrift der Restlaufzeit (linear aus price_paid).
+function LiBridgeServerFeeds.CalculateRemainingCredit(row)
+    local paid = tonumber(row.price_paid) or 0
+    if paid <= 0 then
+        return 0
+    end
+
+    local createdAt = parseDateTimeToUnix(row.created_at)
+    local expiresAt = parseDateTimeToUnix(row.expires_at)
+    local now = os.time()
+
+    if not createdAt or not expiresAt or expiresAt <= now then
+        return 0
+    end
+
+    local totalSeconds = expiresAt - createdAt
+    if totalSeconds <= 0 then
+        return 0
+    end
+
+    local remainingSeconds = expiresAt - now
+    if remainingSeconds <= 0 then
+        return 0
+    end
+
+    return math.floor(paid * (remainingSeconds / totalSeconds))
 end
 
 function LiBridgeServerFeeds.GetPlayerFeedHistory(identifier, cb)
@@ -384,7 +438,7 @@ end
 function LiBridgeServerFeeds.GetActiveAds(viewerIdentifier, cb)
     LiBridge.MySQL.Query(
         [[SELECT id, identifier, author_name, title, content, category, phone, anonymous,
-                 premium, spotlight_until, created_at, expires_at
+                 premium, spotlight_until, duration_hours, price_paid, created_at, expires_at
           FROM lifeinvader_feeds
           WHERE status = 'active' AND expires_at > NOW()
           ORDER BY (spotlight_until IS NOT NULL AND spotlight_until > NOW()) DESC, created_at DESC]],

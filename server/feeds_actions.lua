@@ -162,15 +162,9 @@ RegisterNetEvent('ec_lifeinvader:server:postAd', function(requestId, data)
         return
     end
 
-    local price, priceErr = LiBridgeServerFeeds.CalculatePrice(data)
-    if not price then
+    local grossPrice, priceErr = LiBridgeServerFeeds.CalculatePrice(data)
+    if not grossPrice then
         respondPost(src, requestId, { ok = false, error = priceErr or 'invalid_price' })
-        return
-    end
-
-    local clientPrice = math.floor(tonumber(data.price) or -1)
-    if clientPrice >= 0 and math.abs(clientPrice - price) > 1 then
-        respondPost(src, requestId, { ok = false, error = 'price_mismatch' })
         return
     end
 
@@ -195,9 +189,23 @@ RegisterNetEvent('ec_lifeinvader:server:postAd', function(requestId, data)
     end
 
     local renewFromId = tonumber(data.renewFromId)
+    local extendFromId = tonumber(data.extendFromId)
 
-    local function finishPost()
-    LiBridgeServerAccount.RemoveBalance(identifier, price, function(paid, balance, payErr)
+    if renewFromId and extendFromId then
+        respondPost(src, requestId, { ok = false, error = 'invalid_request' })
+        return
+    end
+
+    local function finishPost(chargePrice)
+        chargePrice = math.max(0, math.floor(tonumber(chargePrice) or 0))
+
+        local clientPrice = math.floor(tonumber(data.price) or -1)
+        if clientPrice >= 0 and math.abs(clientPrice - chargePrice) > 1 then
+            respondPost(src, requestId, { ok = false, error = 'price_mismatch' })
+            return
+        end
+
+    LiBridgeServerAccount.RemoveBalance(identifier, chargePrice, function(paid, balance, payErr)
         if not paid then
             respondPost(src, requestId, {
                 ok = false,
@@ -225,10 +233,10 @@ RegisterNetEvent('ec_lifeinvader:server:postAd', function(requestId, data)
             isAnonymous and 1 or 0,
             premiumJson,
             duration.hours,
-            price,
+            chargePrice,
         }, function(insertId)
             if not insertId then
-                LiBridgeServerAccount.AddBalance(identifier, price, function() end)
+                LiBridgeServerAccount.AddBalance(identifier, chargePrice, function() end)
                 respondPost(src, requestId, { ok = false, error = 'db_failed' })
                 return
             end
@@ -252,6 +260,98 @@ RegisterNetEvent('ec_lifeinvader:server:postAd', function(requestId, data)
     end)
     end
 
+    if extendFromId then
+        LiBridge.MySQL.Query(
+            [[SELECT id, identifier, author_name, title, content, category, phone, anonymous,
+                     premium, spotlight_until, anonym_until, ticker_until,
+                     duration_hours, price_paid, status, created_at, expires_at
+              FROM lifeinvader_feeds
+              WHERE id = ?
+              LIMIT 1]],
+            { extendFromId },
+            function(rows)
+                local row = rows and rows[1]
+                if not LiBridgeServerFeeds.CanExtendRow(row, identifier) then
+                    respondPost(src, requestId, { ok = false, error = 'extend_invalid' })
+                    return
+                end
+
+                local credit = LiBridgeServerFeeds.CalculateRemainingCredit(row)
+                local chargePrice = math.max(0, grossPrice - credit)
+
+                local clientPrice = math.floor(tonumber(data.price) or -1)
+                if clientPrice >= 0 and math.abs(clientPrice - chargePrice) > 1 then
+                    respondPost(src, requestId, { ok = false, error = 'price_mismatch' })
+                    return
+                end
+
+                LiBridgeServerAccount.RemoveBalance(identifier, chargePrice, function(paid, balance, payErr)
+                    if not paid then
+                        respondPost(src, requestId, {
+                            ok = false,
+                            error = payErr == 'insufficient_balance' and 'insufficient_balance' or 'payment_failed',
+                            balance = balance,
+                        })
+                        return
+                    end
+
+                    local updateQuery = ([[
+                        UPDATE lifeinvader_feeds SET
+                            author_name = ?,
+                            title = ?,
+                            content = ?,
+                            category = ?,
+                            phone = ?,
+                            anonymous = ?,
+                            premium = ?,
+                            duration_hours = duration_hours + ?,
+                            price_paid = price_paid + ?,
+                            expires_at = DATE_ADD(expires_at, INTERVAL %d HOUR),
+                            spotlight_until = %s,
+                            anonym_until = %s,
+                            ticker_until = %s
+                        WHERE id = ? AND identifier = ? AND status = 'active'
+                    ]]):format(duration.hours, spotlightSql, anonymSql, tickerSql)
+
+                    LiBridge.MySQL.Execute(updateQuery, {
+                        authorName,
+                        trim(data.title),
+                        trim(data.content),
+                        trim(data.category),
+                        phone,
+                        isAnonymous and 1 or 0,
+                        premiumJson,
+                        duration.hours,
+                        chargePrice,
+                        extendFromId,
+                        identifier,
+                    }, function(affected)
+                        local rowsAffected = tonumber(affected) or 0
+                        if rowsAffected < 1 then
+                            LiBridgeServerAccount.AddBalance(identifier, chargePrice, function() end)
+                            respondPost(src, requestId, { ok = false, error = 'db_failed' })
+                            return
+                        end
+
+                        LiBridgeServerFeeds.GetActiveAds(identifier, function(ads)
+                            LiBridgeServerFeeds.GetPlayerFeedHistory(identifier, function(history)
+                                respondPost(src, requestId, {
+                                    ok = true,
+                                    balance = balance,
+                                    ads = ads,
+                                    history = history,
+                                    extensionCredit = credit,
+                                    charged = chargePrice,
+                                })
+                            end)
+                        end)
+                    end)
+                end)
+            end
+        )
+        return
+    end
+
     if renewFromId then
         LiBridge.MySQL.Query(
             [[SELECT id, identifier, status, expires_at
@@ -264,13 +364,13 @@ RegisterNetEvent('ec_lifeinvader:server:postAd', function(requestId, data)
                     respondPost(src, requestId, { ok = false, error = 'renew_invalid' })
                     return
                 end
-                finishPost()
+                finishPost(grossPrice)
             end
         )
         return
     end
 
-    finishPost()
+    finishPost(grossPrice)
 end)
 
 RegisterNetEvent('ec_lifeinvader:server:deleteAd', function(requestId, adId)
