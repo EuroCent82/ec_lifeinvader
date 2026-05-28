@@ -269,21 +269,18 @@ Config.VersionCheck = {
 }
 
 --------------------------------------------------------------------------------
--- 8) Blips — 1:1 wie nxt_driving_school (client/npc.lua): STRING + AddTextComponentString
+-- 8) Blips — Sprite 77 = rotes „L“ (LifeInvader-Style, GTA-Blip-Referenz)
 --
---    Pro Standort genau EIN Blip. Mehrere mit gleichem sprite+label → GTA „gruppiert“ (< 1/2 >),
---    manchmal falscher Legenden-Text. Zum Testen erst nur einen Standort aktiv lassen.
+--    Pro Standort ein Blip. Gleiches sprite+label → GTA kann gruppieren (< 1/2 >).
+--    blipLabel pro Standort bricht Gruppierung (optional).
 --
 --    sprite / color / scale → https://docs.fivem.net/docs/game-references/blips/
---
---    Pro Standort optional:
---      blipLabel = '…'  → eigener Name (bricht Gruppierung)
---      blip = false     → kein Blip
+--    nameMode: auf Build b3407 kein Custom-Name (Crash) → Legende zeigt Sprite-Text
 --------------------------------------------------------------------------------
 
 Config.Blip = {
     enabled = true,
-    sprite = 225,
+    sprite = 77,
     color = 1,
     scale = 0.85,
     shortRange = false,
@@ -317,27 +314,25 @@ Config.Locations = {
         label = 'LifeInvader Vespucci',
         enabled = true,
         type = 'npc',
-        model = 'cs_barry',
+        --- LifeInvader-Mitarbeiter (Story/Online, Rockford-Hills-Büro)
+        model = 's_m_m_lifeinvad_01',
         coords = vector4(-1084.8989, -256.6928, 37.7633, 209.2137),
-        --- spawnZOffset = 0.0,  --- optional; Standard -1.0 (wie v1.0.0)
         scenario = 'WORLD_HUMAN_STAND_MOBILE',
         interactDistance = 2.5,
         interaction = 'target',
     },
-
-    -- Zweiter Standort (später) — aus, damit kein Blip-Gruppieren (< 1/2 >) den Test verfälscht
-    --[[
     {
         id = 'lifeinvader_pillbox',
         label = 'LifeInvader Pillbox',
         enabled = true,
-        type = 'object',
-        model = 'prop_laptop_01a',
+        type = 'npc',
+        model = 's_m_m_lifeinvad_01',
         coords = vector4(298.62, -584.41, 43.26, 70.0),
-        interactDistance = 2.0,
+        spawnZOffset = 0.0,
+        scenario = 'WORLD_HUMAN_CLIPBOARD',
+        interactDistance = 2.5,
         interaction = 'target',
     },
-    ]]
 }
 
 --[[  Standort-Beispiele:

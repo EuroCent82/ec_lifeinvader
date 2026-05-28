@@ -71,6 +71,12 @@ Alle Optionen sind in **`config.lua`** und **`readme_config.md`** dokumentiert (
 
 ---
 
+## Version 1.1.14
+
+- Blip wieder Sprite **77** (rotes L)
+- Zwei Standorte aktiv (Vespucci + Pillbox)
+- NPC: **s_m_m_lifeinvad_01** (LifeInvader-Mitarbeiter, Story/Online)
+
 ## Version 1.1.13
 
 - Cleanup: ungenutzter Code entfernt, Config bereinigt
