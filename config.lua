@@ -516,7 +516,7 @@ Config.PremiumFeatures = {
 --
 --     defaultMax     → Standard ohne Team-Bonus (z. B. 2)
 --     minimum        → Untergrenze des effektiven Limits (auch mit Bonus)
---     maximum        → Obergrenze des effektiven Limits (auch mit Team-Bonus)
+--     maximum        → Obergrenze des effektiven Limits (auch mit Team-Bonus, z. B. 8)
 --     teamCanAdjust  → Team darf pro Spieler Bonus-Slots vergeben (+1 / +8)
 --     teamGrantOptions → erlaubte Vergabe-Stufen (nur diese Werte)
 --------------------------------------------------------------------------------
@@ -524,9 +524,10 @@ Config.PremiumFeatures = {
 Config.AdSlots = {
     defaultMax = 2,
     minimum = 1,
-    maximum = 20,
+    maximum = 8,
     teamCanAdjust = true,
     teamGrantOptions = { 1, 8 },
+    teamRemoveOptions = { 1, 8 },
 }
 
 --------------------------------------------------------------------------------
@@ -541,7 +542,8 @@ Config.AdDuration = {
     minimum = 1,
     maximum = 30,
     teamCanAdjust = true,
-    teamGrantOptions = { 7 },
+    teamGrantOptions = { 1, 7 },
+    teamRemoveOptions = { 1, 7 },
 }
 
 --------------------------------------------------------------------------------

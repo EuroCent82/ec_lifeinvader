@@ -110,6 +110,32 @@ function LiBridgeServerAdSlots.CanPostNewAd(identifier, cb)
     end)
 end
 
+local function parseOptionList(cfg, grantKey, removeKey, grantDefault, removeDefault)
+    local grantOptions = {}
+    for _, option in ipairs(cfg[grantKey] or grantDefault) do
+        local value = math.floor(tonumber(option) or 0)
+        if value > 0 then
+            grantOptions[#grantOptions + 1] = value
+        end
+    end
+    if #grantOptions == 0 then
+        grantOptions = grantDefault
+    end
+
+    local removeOptions = {}
+    for _, option in ipairs(cfg[removeKey] or removeDefault) do
+        local value = math.floor(tonumber(option) or 0)
+        if value > 0 then
+            removeOptions[#removeOptions + 1] = value
+        end
+    end
+    if #removeOptions == 0 then
+        removeOptions = removeDefault
+    end
+
+    return grantOptions, removeOptions
+end
+
 function LiBridgeServerAdSlots.AddBonusSlots(identifier, amount, cb)
     amount = math.floor(tonumber(amount) or 0)
     if not identifier or amount <= 0 then
@@ -159,27 +185,56 @@ function LiBridgeServerAdSlots.AddBonusSlots(identifier, amount, cb)
     end)
 end
 
+function LiBridgeServerAdSlots.RemoveBonusSlots(identifier, amount, cb)
+    amount = math.floor(tonumber(amount) or 0)
+    if not identifier or amount <= 0 then
+        if cb then
+            cb(false, 'invalid_amount')
+        end
+        return
+    end
+
+    LiBridgeServerAdSlots.EnsureAccountRow(identifier, function(ok, currentBonus)
+        if not ok then
+            if cb then
+                cb(false, 'db_failed')
+            end
+            return
+        end
+
+        local nextBonus = math.max(0, math.floor(currentBonus or 0) - amount)
+
+        LiBridge.MySQL.Execute(
+            'UPDATE lifeinvader SET ad_slot_bonus = ?, updated_at = CURRENT_TIMESTAMP WHERE identifier = ?',
+            { nextBonus, identifier },
+            function(affected)
+                if (tonumber(affected) or 0) < 1 then
+                    if cb then
+                        cb(false, 'db_failed')
+                    end
+                    return
+                end
+
+                LiBridgeServerAdSlots.GetPlayerAdSlotInfo(identifier, function(info)
+                    if cb then
+                        cb(true, nil, info)
+                    end
+                end)
+            end
+        )
+    end)
+end
+
 function LiBridgeServerAdSlots.BuildPolicyForUi()
     local cfg = adSlotsConfig()
-    local options = cfg.teamGrantOptions or { 1, 8 }
-    local grantOptions = {}
-
-    for i = 1, #options do
-        local value = math.floor(tonumber(options[i]) or 0)
-        if value > 0 then
-            grantOptions[#grantOptions + 1] = value
-        end
-    end
-
-    if #grantOptions == 0 then
-        grantOptions = { 1, 8 }
-    end
+    local grantOptions, removeOptions = parseOptionList(cfg, 'teamGrantOptions', 'teamRemoveOptions', { 1, 8 }, { 1, 8 })
 
     return {
         defaultMax = LiBridgeServerAdSlots.GetDefaultMax(),
         minimum = math.max(1, math.floor(tonumber(cfg.minimum) or 1)),
-        maximum = math.max(1, math.floor(tonumber(cfg.maximum) or 10)),
+        maximum = math.max(1, math.floor(tonumber(cfg.maximum) or 8)),
         teamCanAdjust = cfg.teamCanAdjust ~= false,
         teamGrantOptions = grantOptions,
+        teamRemoveOptions = removeOptions,
     }
 end

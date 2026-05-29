@@ -170,12 +170,20 @@ registerTeamCallback('teamGrantAdSlots', function(requestId, data)
     TriggerServerEvent('ec_lifeinvader:server:teamGrantAdSlots', requestId, data.identifier, data.amount)
 end)
 
+registerTeamCallback('teamRemoveAdSlots', function(requestId, data)
+    TriggerServerEvent('ec_lifeinvader:server:teamRemoveAdSlots', requestId, data.identifier, data.amount)
+end)
+
 registerTeamCallback('teamLookupAdDuration', function(requestId, data)
     TriggerServerEvent('ec_lifeinvader:server:teamLookupAdDuration', requestId, data.identifier)
 end)
 
 registerTeamCallback('teamGrantAdDuration', function(requestId, data)
     TriggerServerEvent('ec_lifeinvader:server:teamGrantAdDuration', requestId, data.identifier, data.amount)
+end)
+
+registerTeamCallback('teamRemoveAdDuration', function(requestId, data)
+    TriggerServerEvent('ec_lifeinvader:server:teamRemoveAdDuration', requestId, data.identifier, data.amount)
 end)
 
 registerTeamCallback('teamListVouchers', function(requestId)
@@ -196,6 +204,14 @@ end)
 
 registerTeamCallback('teamCreateCategory', function(requestId, data)
     TriggerServerEvent('ec_lifeinvader:server:teamCreateCategory', requestId, data)
+end)
+
+registerTeamCallback('teamUpdateCategory', function(requestId, data)
+    TriggerServerEvent('ec_lifeinvader:server:teamUpdateCategory', requestId, data)
+end)
+
+registerTeamCallback('teamDeleteCategory', function(requestId, data)
+    TriggerServerEvent('ec_lifeinvader:server:teamDeleteCategory', requestId, data.id)
 end)
 
 RegisterNUICallback('contact', function(data, cb)

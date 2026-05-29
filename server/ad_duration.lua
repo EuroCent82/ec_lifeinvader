@@ -75,28 +75,30 @@ function LiBridgeServerAdDuration.GetPlayerInfo(identifier, cb)
     end)
 end
 
-function LiBridgeServerAdDuration.BuildPolicyForUi()
-    local cfg = durationConfig()
-    local options = cfg.teamGrantOptions or { 7 }
-    local grantOptions = {}
-
-    for i = 1, #options do
-        local value = math.floor(tonumber(options[i]) or 0)
+local function parseDurationOptions(cfg, key, fallback)
+    local options = {}
+    for _, option in ipairs(cfg[key] or fallback) do
+        local value = math.floor(tonumber(option) or 0)
         if value > 0 then
-            grantOptions[#grantOptions + 1] = value
+            options[#options + 1] = value
         end
     end
-
-    if #grantOptions == 0 then
-        grantOptions = { 7 }
+    if #options == 0 then
+        return fallback
     end
+    return options
+end
+
+function LiBridgeServerAdDuration.BuildPolicyForUi()
+    local cfg = durationConfig()
 
     return {
         defaultMaxDays = LiBridgeServerAdDuration.GetDefaultMaxDays(),
         minimum = math.max(1, math.floor(tonumber(cfg.minimum) or 1)),
         maximum = math.max(1, math.floor(tonumber(cfg.maximum) or 30)),
         teamCanAdjust = cfg.teamCanAdjust ~= false,
-        teamGrantOptions = grantOptions,
+        teamGrantOptions = parseDurationOptions(cfg, 'teamGrantOptions', { 1, 7 }),
+        teamRemoveOptions = parseDurationOptions(cfg, 'teamRemoveOptions', { 1, 7 }),
     }
 end
 
@@ -125,6 +127,46 @@ function LiBridgeServerAdDuration.AddBonusDays(identifier, amount, cb)
         if effectiveMax >= maximum then
             nextBonus = math.max(0, maximum - defaultMax)
         end
+
+        LiBridge.MySQL.Execute(
+            'UPDATE lifeinvader SET ad_duration_bonus_days = ?, updated_at = CURRENT_TIMESTAMP WHERE identifier = ?',
+            { nextBonus, identifier },
+            function(affected)
+                if (tonumber(affected) or 0) < 1 then
+                    if cb then
+                        cb(false, 'db_failed')
+                    end
+                    return
+                end
+
+                LiBridgeServerAdDuration.GetPlayerInfo(identifier, function(info)
+                    if cb then
+                        cb(true, nil, info)
+                    end
+                end)
+            end
+        )
+    end)
+end
+
+function LiBridgeServerAdDuration.RemoveBonusDays(identifier, amount, cb)
+    amount = math.floor(tonumber(amount) or 0)
+    if not identifier or amount <= 0 then
+        if cb then
+            cb(false, 'invalid_amount')
+        end
+        return
+    end
+
+    LiBridgeServerAdDuration.EnsureAccountRow(identifier, function(ok, currentBonus)
+        if not ok then
+            if cb then
+                cb(false, 'db_failed')
+            end
+            return
+        end
+
+        local nextBonus = math.max(0, math.floor(currentBonus or 0) - amount)
 
         LiBridge.MySQL.Execute(
             'UPDATE lifeinvader SET ad_duration_bonus_days = ?, updated_at = CURRENT_TIMESTAMP WHERE identifier = ?',

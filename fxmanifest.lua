@@ -4,7 +4,7 @@ game 'gta5'
 author 'EuroCent'
 name 'ec_lifeinvader'
 description 'LifeInvader — Werbeanzeigen-System für FiveM'
-version '1.1.25'
+version '1.1.26'
 
 shared_scripts {
     'config.lua',

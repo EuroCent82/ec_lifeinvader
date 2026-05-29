@@ -64,6 +64,111 @@ RegisterNetEvent('ec_lifeinvader:server:teamSetCategoryEnabled', function(reques
     )
 end)
 
+RegisterNetEvent('ec_lifeinvader:server:teamUpdateCategory', function(requestId, data)
+    local src = source
+
+    if not LiBridgeServerTeam.Guard(src, requestId, 'categories') then
+        return
+    end
+
+    data = data or {}
+    local categoryId = tonumber(data.id)
+    if not categoryId then
+        LiBridgeServerTeam.Respond(src, requestId, { ok = false, error = 'invalid_id' })
+        return
+    end
+
+    local label = tostring(data.label or ''):gsub('^%s+', ''):gsub('%s+$', '')
+    local slug = slugify(data.slug ~= '' and data.slug or label)
+    local icon = tostring(data.icon or 'ellipsis'):gsub('^%s+', ''):gsub('%s+$', '')
+    local enabled = data.enabled ~= false
+    local sortOrder = math.floor(tonumber(data.sortOrder) or 0)
+
+    if label == '' or slug == '' then
+        LiBridgeServerTeam.Respond(src, requestId, { ok = false, error = 'invalid_input' })
+        return
+    end
+
+    LiBridge.MySQL.Execute(
+        [[UPDATE lifeinvader_categories
+          SET slug = ?, label = ?, icon = ?, enabled = ?, sort_order = ?
+          WHERE id = ?]],
+        { slug, label, icon, enabled and 1 or 0, sortOrder, categoryId },
+        function(affected)
+            if (tonumber(affected) or 0) < 1 then
+                LiBridgeServerTeam.Respond(src, requestId, { ok = false, error = 'not_found' })
+                return
+            end
+
+            LiBridgeServerTeam.Respond(src, requestId, {
+                ok = true,
+                category = {
+                    id = categoryId,
+                    slug = slug,
+                    label = label,
+                    icon = icon,
+                    enabled = enabled,
+                    sortOrder = sortOrder,
+                },
+            })
+        end
+    )
+end)
+
+RegisterNetEvent('ec_lifeinvader:server:teamDeleteCategory', function(requestId, categoryId)
+    local src = source
+
+    if not LiBridgeServerTeam.Guard(src, requestId, 'categories') then
+        return
+    end
+
+    categoryId = tonumber(categoryId)
+    if not categoryId then
+        LiBridgeServerTeam.Respond(src, requestId, { ok = false, error = 'invalid_id' })
+        return
+    end
+
+    LiBridge.MySQL.Query(
+        'SELECT slug FROM lifeinvader_categories WHERE id = ? LIMIT 1',
+        { categoryId },
+        function(rows)
+            local row = rows and rows[1]
+            if not row then
+                LiBridgeServerTeam.Respond(src, requestId, { ok = false, error = 'not_found' })
+                return
+            end
+
+            local slug = row.slug
+            LiBridge.MySQL.Query(
+                [[SELECT COUNT(*) AS count
+                  FROM lifeinvader_feeds
+                  WHERE category = ? AND status IN ('active', 'expired')]],
+                { slug },
+                function(countRows)
+                    local count = tonumber(countRows and countRows[1] and countRows[1].count) or 0
+                    if count > 0 then
+                        LiBridgeServerTeam.Respond(src, requestId, { ok = false, error = 'category_in_use' })
+                        return
+                    end
+
+                    LiBridge.MySQL.Execute(
+                        'DELETE FROM lifeinvader_categories WHERE id = ?',
+                        { categoryId },
+                        function(affected)
+                            if (tonumber(affected) or 0) < 1 then
+                                LiBridgeServerTeam.Respond(src, requestId, { ok = false, error = 'not_found' })
+                                return
+                            end
+
+                            LiBridgeServerTeam.Respond(src, requestId, { ok = true, deletedId = categoryId })
+                        end
+                    )
+                end
+            )
+        end
+    )
+end)
+
 RegisterNetEvent('ec_lifeinvader:server:teamCreateCategory', function(requestId, data)
     local src = source
 
