@@ -530,6 +530,21 @@ Config.AdSlots = {
 }
 
 --------------------------------------------------------------------------------
+-- 13c) Anzeigen-Laufzeit — max. buchbare Tage pro Anzeige
+--
+--     defaultMaxDays  → Standard ohne Team-Bonus (z. B. 7)
+--     teamGrantOptions → z. B. +7 Tage Bonus (nur dieser Spieler, max. 30 gesamt)
+--------------------------------------------------------------------------------
+
+Config.AdDuration = {
+    defaultMaxDays = 7,
+    minimum = 1,
+    maximum = 30,
+    teamCanAdjust = true,
+    teamGrantOptions = { 7 },
+}
+
+--------------------------------------------------------------------------------
 -- 14) Team-Panel (Admin) — nur mit Config.Permissions.team
 --
 --     Berechtigte sehen im Tablet einen extra Tab „Team“ / Admin-Panel:
@@ -549,6 +564,7 @@ Config.Admin = {
         ads = true,
         refunds = true,
         adSlots = true,
+        adDuration = true,
     },
 }
 
@@ -631,6 +647,8 @@ Config.Database = {
     ownerColumn = 'identifier',
     --- Konsolen-/Admin-Befehl: livdb check | livdb fix
     checkCommand = 'livdb',
+    --- true = nur Server-Konsole (txAdmin), kein /livdb im Spiel
+    checkConsoleOnly = false,
 }
 
 --[[  Custom Bridge — für exotische Setups:

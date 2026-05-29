@@ -49,7 +49,13 @@ RegisterNetEvent('ec_lifeinvader:server:requestOpen', function(locationId)
 
             LiBridgeServerAdSlots.GetPlayerAdSlotInfo(identifier, function(slotInfo)
                 payload.adSlots = slotInfo
-                TriggerClientEvent('ec_lifeinvader:client:openNui', src, payload)
+                payload.adSlotPolicy = LiBridgeServerAdSlots.BuildPolicyForUi()
+                payload.adDurationPolicy = LiBridgeServerAdDuration.BuildPolicyForUi()
+
+                LiBridgeServerAdDuration.GetPlayerInfo(identifier, function(durationInfo)
+                    payload.adDuration = durationInfo
+                    TriggerClientEvent('ec_lifeinvader:client:openNui', src, payload)
+                end)
             end)
         end)
     end)

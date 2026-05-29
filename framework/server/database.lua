@@ -37,6 +37,12 @@ local SCHEMA_PATCHES = {
         label = 'lifeinvader.ad_slot_bonus',
         alter = 'ALTER TABLE lifeinvader ADD COLUMN ad_slot_bonus INT NOT NULL DEFAULT 0 AFTER balance',
     },
+    {
+        table = 'lifeinvader',
+        column = 'ad_duration_bonus_days',
+        label = 'lifeinvader.ad_duration_bonus_days',
+        alter = 'ALTER TABLE lifeinvader ADD COLUMN ad_duration_bonus_days INT NOT NULL DEFAULT 0 AFTER ad_slot_bonus',
+    },
 }
 
 local function fakeEnabled()

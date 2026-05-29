@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS `lifeinvader` (
     `identifier` VARCHAR(128) NOT NULL COMMENT 'QBox PlayerData.citizenid',
     `balance` INT NOT NULL DEFAULT 0,
     `ad_slot_bonus` INT NOT NULL DEFAULT 0 COMMENT 'Zusätzliche aktive Anzeigen-Slots (Team)',
+    `ad_duration_bonus_days` INT NOT NULL DEFAULT 0 COMMENT 'Zusätzliche max. Anzeigen-Laufzeit in Tagen (Team)',
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),

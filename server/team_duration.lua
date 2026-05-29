@@ -1,18 +1,18 @@
---[[ ec_lifeinvader — Team: zusätzliche Anzeigen-Slots vergeben ]]
+--[[ ec_lifeinvader — Team: Anzeigen-Laufzeit (Tage) ]]
 
-local function teamSlotsEnabled()
-    local cfg = Config.AdSlots or {}
+local function durationEnabled()
+    local cfg = Config.AdDuration or {}
     return cfg.teamCanAdjust ~= false
 end
 
-RegisterNetEvent('ec_lifeinvader:server:teamLookupAdSlots', function(requestId, targetIdentifier)
+RegisterNetEvent('ec_lifeinvader:server:teamLookupAdDuration', function(requestId, targetIdentifier)
     local src = source
 
-    if not LiBridgeServerTeam.Guard(src, requestId, 'adSlots') then
+    if not LiBridgeServerTeam.Guard(src, requestId, 'adDuration') then
         return
     end
 
-    if not teamSlotsEnabled() then
+    if not durationEnabled() then
         LiBridgeServerTeam.Respond(src, requestId, { ok = false, error = 'feature_disabled' })
         return
     end
@@ -23,24 +23,24 @@ RegisterNetEvent('ec_lifeinvader:server:teamLookupAdSlots', function(requestId, 
         return
     end
 
-    LiBridgeServerAdSlots.GetPlayerAdSlotInfo(targetIdentifier, function(info)
+    LiBridgeServerAdDuration.GetPlayerInfo(targetIdentifier, function(info)
         LiBridgeServerTeam.Respond(src, requestId, {
             ok = true,
             identifier = targetIdentifier,
-            slots = info,
-            policy = LiBridgeServerAdSlots.BuildPolicyForUi(),
+            duration = info,
+            policy = LiBridgeServerAdDuration.BuildPolicyForUi(),
         })
     end)
 end)
 
-RegisterNetEvent('ec_lifeinvader:server:teamGrantAdSlots', function(requestId, targetIdentifier, amount)
+RegisterNetEvent('ec_lifeinvader:server:teamGrantAdDuration', function(requestId, targetIdentifier, amount)
     local src = source
 
-    if not LiBridgeServerTeam.Guard(src, requestId, 'adSlots') then
+    if not LiBridgeServerTeam.Guard(src, requestId, 'adDuration') then
         return
     end
 
-    if not teamSlotsEnabled() then
+    if not durationEnabled() then
         LiBridgeServerTeam.Respond(src, requestId, { ok = false, error = 'feature_disabled' })
         return
     end
@@ -58,7 +58,7 @@ RegisterNetEvent('ec_lifeinvader:server:teamGrantAdSlots', function(requestId, t
     end
 
     local allowed = false
-    for _, option in ipairs((Config.AdSlots or {}).teamGrantOptions or { 1, 8 }) do
+    for _, option in ipairs((Config.AdDuration or {}).teamGrantOptions or { 7 }) do
         if math.floor(tonumber(option) or 0) == amount then
             allowed = true
             break
@@ -70,26 +70,17 @@ RegisterNetEvent('ec_lifeinvader:server:teamGrantAdSlots', function(requestId, t
         return
     end
 
-    LiBridgeServerAdSlots.AddBonusSlots(targetIdentifier, amount, function(ok, reason, info)
+    LiBridgeServerAdDuration.AddBonusDays(targetIdentifier, amount, function(ok, reason, info)
         if not ok then
             LiBridgeServerTeam.Respond(src, requestId, { ok = false, error = reason or 'db_failed' })
             return
         end
 
-        local staffName = LiBridge.Server.GetCharacterName(src) or GetPlayerName(src) or 'Team'
-        print(('^2[ec_lifeinvader]^0 %s'):format(_L(
-            'team.slotGrantedLog',
-            staffName,
-            amount,
-            targetIdentifier,
-            info.max
-        )))
-
         LiBridgeServerTeam.Respond(src, requestId, {
             ok = true,
             identifier = targetIdentifier,
             granted = amount,
-            slots = info,
+            duration = info,
         })
     end)
 end)

@@ -13,6 +13,11 @@ local function canRunDbCheck(source)
     if source == 0 then
         return true
     end
+
+    if (Config.Database or {}).checkConsoleOnly == true then
+        return false
+    end
+
     return LiBridge.Server.HasPermission(source, 'dbCheck')
         or LiBridge.Server.HasPermission(source, 'admin')
 end

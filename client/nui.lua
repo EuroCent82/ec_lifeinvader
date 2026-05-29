@@ -7,7 +7,7 @@ local pendingDeposits = {}
 local pendingContacts = {}
 local pendingPostAds = {}
 local pendingDeleteAds = {}
-local pendingTeamSlots = {}
+local pendingTeam = {}
 
 RegisterNetEvent('ec_lifeinvader:client:openNui', function(payload)
     nuiOpen = true
@@ -133,33 +133,70 @@ RegisterNUICallback('deleteAd', function(data, cb)
     end)
 end)
 
-RegisterNetEvent('ec_lifeinvader:client:teamGrantAdSlotsResult', function(requestId, result)
-    local cb = pendingTeamSlots[requestId]
+RegisterNetEvent('ec_lifeinvader:client:teamResult', function(requestId, result)
+    local cb = pendingTeam[requestId]
     if not cb then
         return
     end
 
-    pendingTeamSlots[requestId] = nil
+    pendingTeam[requestId] = nil
     cb(result or { ok = false, error = 'empty_response' })
 end)
 
-local function registerTeamSlotCallback(name, serverEvent)
+local function registerTeamCallback(name, triggerFn)
     RegisterNUICallback(name, function(data, cb)
         local requestId = ('%s_%s'):format(GetGameTimer(), math.random(10000, 99999))
-        pendingTeamSlots[requestId] = cb
-        TriggerServerEvent(serverEvent, requestId, data and data.identifier, data and data.amount)
+        pendingTeam[requestId] = cb
+        triggerFn(requestId, data or {})
 
         SetTimeout(15000, function()
-            if pendingTeamSlots[requestId] then
-                pendingTeamSlots[requestId]({ ok = false, error = 'timeout' })
-                pendingTeamSlots[requestId] = nil
+            if pendingTeam[requestId] then
+                pendingTeam[requestId]({ ok = false, error = 'timeout' })
+                pendingTeam[requestId] = nil
             end
         end)
     end)
 end
 
-registerTeamSlotCallback('teamLookupAdSlots', 'ec_lifeinvader:server:teamLookupAdSlots')
-registerTeamSlotCallback('teamGrantAdSlots', 'ec_lifeinvader:server:teamGrantAdSlots')
+registerTeamCallback('teamSearchPlayers', function(requestId, data)
+    TriggerServerEvent('ec_lifeinvader:server:teamSearchPlayers', requestId, data.query)
+end)
+
+registerTeamCallback('teamLookupAdSlots', function(requestId, data)
+    TriggerServerEvent('ec_lifeinvader:server:teamLookupAdSlots', requestId, data.identifier)
+end)
+
+registerTeamCallback('teamGrantAdSlots', function(requestId, data)
+    TriggerServerEvent('ec_lifeinvader:server:teamGrantAdSlots', requestId, data.identifier, data.amount)
+end)
+
+registerTeamCallback('teamLookupAdDuration', function(requestId, data)
+    TriggerServerEvent('ec_lifeinvader:server:teamLookupAdDuration', requestId, data.identifier)
+end)
+
+registerTeamCallback('teamGrantAdDuration', function(requestId, data)
+    TriggerServerEvent('ec_lifeinvader:server:teamGrantAdDuration', requestId, data.identifier, data.amount)
+end)
+
+registerTeamCallback('teamListVouchers', function(requestId)
+    TriggerServerEvent('ec_lifeinvader:server:teamListVouchers', requestId)
+end)
+
+registerTeamCallback('teamCreateVoucher', function(requestId, data)
+    TriggerServerEvent('ec_lifeinvader:server:teamCreateVoucher', requestId, data)
+end)
+
+registerTeamCallback('teamListCategories', function(requestId)
+    TriggerServerEvent('ec_lifeinvader:server:teamListCategories', requestId)
+end)
+
+registerTeamCallback('teamSetCategoryEnabled', function(requestId, data)
+    TriggerServerEvent('ec_lifeinvader:server:teamSetCategoryEnabled', requestId, data.id, data.enabled)
+end)
+
+registerTeamCallback('teamCreateCategory', function(requestId, data)
+    TriggerServerEvent('ec_lifeinvader:server:teamCreateCategory', requestId, data)
+end)
 
 RegisterNUICallback('contact', function(data, cb)
     local requestId = ('%s_%s'):format(GetGameTimer(), math.random(10000, 99999))

@@ -299,6 +299,12 @@ RegisterNetEvent('ec_lifeinvader:server:postAd', function(requestId, data)
                     return
                 end
 
+                LiBridgeServerAdDuration.ValidateDurationHours(identifier, duration.hours, function(durationOk, maxHours)
+                    if not durationOk then
+                        respondPost(src, requestId, { ok = false, error = 'duration_limit', maxHours = maxHours })
+                        return
+                    end
+
                 local credit = LiBridgeServerFeeds.CalculateRemainingCredit(row)
                 local chargePrice = math.max(0, grossPrice - credit)
 
@@ -370,6 +376,7 @@ RegisterNetEvent('ec_lifeinvader:server:postAd', function(requestId, data)
                         end)
                     end)
                 end)
+                end)
             end
         )
         return
@@ -387,16 +394,30 @@ RegisterNetEvent('ec_lifeinvader:server:postAd', function(requestId, data)
                     respondPost(src, requestId, { ok = false, error = 'renew_invalid' })
                     return
                 end
-                requireAdSlot(identifier, src, requestId, function()
-                    finishPost(grossPrice)
+                LiBridgeServerAdDuration.ValidateDurationHours(identifier, duration.hours, function(durationOk, maxHours)
+                    if not durationOk then
+                        respondPost(src, requestId, { ok = false, error = 'duration_limit', maxHours = maxHours })
+                        return
+                    end
+
+                    requireAdSlot(identifier, src, requestId, function()
+                        finishPost(grossPrice)
+                    end)
                 end)
             end
         )
         return
     end
 
-    requireAdSlot(identifier, src, requestId, function()
-        finishPost(grossPrice)
+    LiBridgeServerAdDuration.ValidateDurationHours(identifier, duration.hours, function(durationOk, maxHours)
+        if not durationOk then
+            respondPost(src, requestId, { ok = false, error = 'duration_limit', maxHours = maxHours })
+            return
+        end
+
+        requireAdSlot(identifier, src, requestId, function()
+            finishPost(grossPrice)
+        end)
     end)
 end)
 
