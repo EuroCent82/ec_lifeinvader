@@ -85,12 +85,33 @@ function LiBridge.Server.Init()
     LiBridgeServerDatabase.Install(function(ok, reason)
         if not ok and reason ~= 'disabled' and reason ~= 'complete' then
             print('^1[ec_lifeinvader]^0 Datenbank-Installation fehlgeschlagen:', reason or 'unknown')
+            print('^3[ec_lifeinvader]^0 Resource läuft weiter — Admin: livdb check / livdb fix')
             dbReady = true
             return
         end
 
         LiBridgeServerDatabase.FinishSetup(function()
-            dbReady = true
+            LiBridgeServerDatabase.GetSchemaReport(function(report)
+                if report.ok then
+                    print(('^2[ec_lifeinvader]^0 Datenbank OK — %d Tabellen, %d Schema-Patches geprüft'):format(
+                        #report.presentTables,
+                        report.patchCount
+                    ))
+                else
+                    if #report.missingTables > 0 then
+                        print(('^1[ec_lifeinvader]^0 Fehlende Tabellen: %s'):format(
+                            table.concat(report.missingTables, ', ')
+                        ))
+                    end
+                    if #report.missingPatches > 0 then
+                        print(('^1[ec_lifeinvader]^0 Fehlende Spalten: %s'):format(
+                            table.concat(report.missingPatches, ', ')
+                        ))
+                    end
+                    print('^3[ec_lifeinvader]^0 livdb fix (berechtigte Gruppe) oder Resource neu starten')
+                end
+                dbReady = true
+            end)
         end)
     end)
 

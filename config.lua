@@ -193,6 +193,12 @@ Config.Permissions = {
         ace = 'ec_lifeinvader.team',
         default = false,
     },
+    --- livdb check / livdb fix (Schema-Status, Reparatur)
+    dbCheck = {
+        groups = { 'admin', 'superadmin' },
+        ace = 'ec_lifeinvader.dbcheck',
+        default = false,
+    },
 }
 
 --[[  Permissions einschränken:
@@ -613,6 +619,9 @@ Config.Vouchers = {
 --
 --     Live-Ticker aus Anzeigen: Spalte ticker_until in lifeinvader_feeds
 --     (keine extra Tabelle nötig — Premium-Option setzt ticker_until)
+--
+--     Admin/txAdmin: livdb check (Status) | livdb fix (Tabellen + Spalten-Patches)
+--     Berechtigung: Config.Permissions.dbCheck (Gruppe admin/superadmin oder ACE)
 --------------------------------------------------------------------------------
 
 Config.Database = {
@@ -620,6 +629,8 @@ Config.Database = {
     skipIfInstalled = true,
     installFile = nil,
     ownerColumn = 'identifier',
+    --- Konsolen-/Admin-Befehl: livdb check | livdb fix
+    checkCommand = 'livdb',
 }
 
 --[[  Custom Bridge — für exotische Setups:

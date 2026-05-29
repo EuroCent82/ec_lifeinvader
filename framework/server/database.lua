@@ -23,6 +23,22 @@ local FAKE_BY_FRAMEWORK = {
     qbox = 'sql/fake_qbox.sql',
 }
 
+--- Spalten-Patches für bestehende Installationen (information_schema).
+local SCHEMA_PATCHES = {
+    {
+        table = 'lifeinvader_feeds',
+        column = 'ticker_until',
+        label = 'lifeinvader_feeds.ticker_until',
+        alter = 'ALTER TABLE lifeinvader_feeds ADD COLUMN ticker_until TIMESTAMP NULL DEFAULT NULL AFTER anonym_until',
+    },
+    {
+        table = 'lifeinvader',
+        column = 'ad_slot_bonus',
+        label = 'lifeinvader.ad_slot_bonus',
+        alter = 'ALTER TABLE lifeinvader ADD COLUMN ad_slot_bonus INT NOT NULL DEFAULT 0 AFTER balance',
+    },
+}
+
 local function fakeEnabled()
     if Config.fake == true then
         return true
@@ -217,52 +233,140 @@ function LiBridgeServerDatabase.Install(cb)
     end)
 end
 
-local function ensureColumn(tableName, columnName, alterSql, label, cb)
-    cb = cb or function() end
+function LiBridgeServerDatabase.SchemaPatches()
+    return SCHEMA_PATCHES
+end
 
+local function columnExists(tableName, columnName, cb)
     LiBridge.MySQL.Query(
         ([[SELECT COUNT(*) AS count FROM information_schema.columns
           WHERE table_schema = DATABASE()
-            AND table_name = '%s'
-            AND column_name = '%s']]):format(tableName, columnName),
-        {},
+            AND table_name = ?
+            AND column_name = ?]]),
+        { tableName, columnName },
         function(result)
             local count = 0
             if result and result[1] then
                 count = tonumber(result[1].count or result[1]['COUNT(*)']) or 0
             end
-
-            if count > 0 then
-                cb(true)
-                return
-            end
-
-            LiBridge.MySQL.Query(alterSql, {}, function()
-                LiBridge.Debug(('Schema-Patch: %s Spalte hinzugefügt'):format(label))
-                cb(true)
-            end)
+            cb(count > 0)
         end
     )
+end
+
+local function ensureColumn(patch, cb)
+    cb = cb or function() end
+
+    columnExists(patch.table, patch.column, function(exists)
+        if exists then
+            cb(true, false)
+            return
+        end
+
+        LiBridge.MySQL.Query(patch.alter, {}, function()
+            LiBridge.Debug(('Schema-Patch: %s hinzugefügt'):format(patch.label))
+            cb(true, true)
+        end)
+    end)
+end
+
+local function collectMissingPatches(index, missing, cb)
+    if index > #SCHEMA_PATCHES then
+        cb(missing)
+        return
+    end
+
+    local patch = SCHEMA_PATCHES[index]
+    columnExists(patch.table, patch.column, function(exists)
+        if not exists then
+            missing[#missing + 1] = patch.label
+        end
+        collectMissingPatches(index + 1, missing, cb)
+    end)
+end
+
+function LiBridgeServerDatabase.GetMissingSchemaPatches(cb)
+    collectMissingPatches(1, {}, cb)
+end
+
+--- @param cb fun(report: table)
+function LiBridgeServerDatabase.GetSchemaReport(cb)
+    cb = cb or function() end
+
+    LiBridgeServerDatabase.GetMissingTables(function(missingTables)
+        LiBridgeServerDatabase.GetMissingSchemaPatches(function(missingPatches)
+            local presentTables = {}
+            for _, name in ipairs(REQUIRED_TABLES) do
+                local found = true
+                for _, miss in ipairs(missingTables) do
+                    if miss == name then
+                        found = false
+                        break
+                    end
+                end
+                if found then
+                    presentTables[#presentTables + 1] = name
+                end
+            end
+
+            cb({
+                ok = #missingTables == 0 and #missingPatches == 0,
+                framework = LiBridge.Framework(),
+                installFile = LiBridgeServerDatabase.ResolveInstallFile(),
+                requiredTables = REQUIRED_TABLES,
+                presentTables = presentTables,
+                missingTables = missingTables,
+                missingPatches = missingPatches,
+                patchCount = #SCHEMA_PATCHES,
+            })
+        end)
+    end)
 end
 
 function LiBridgeServerDatabase.EnsureSchemaPatches(cb)
     cb = cb or function() end
 
-    ensureColumn(
-        'lifeinvader_feeds',
-        'ticker_until',
-        'ALTER TABLE lifeinvader_feeds ADD COLUMN ticker_until TIMESTAMP NULL DEFAULT NULL AFTER anonym_until',
-        'ticker_until',
-        function()
-            ensureColumn(
-                'lifeinvader',
-                'ad_slot_bonus',
-                'ALTER TABLE lifeinvader ADD COLUMN ad_slot_bonus INT NOT NULL DEFAULT 0 AFTER balance',
-                'ad_slot_bonus',
-                cb
-            )
+    local function runPatch(index, applied)
+        if index > #SCHEMA_PATCHES then
+            cb(true, applied)
+            return
         end
-    )
+
+        ensureColumn(SCHEMA_PATCHES[index], function(ok, wasApplied)
+            if not ok then
+                cb(false, applied)
+                return
+            end
+            if wasApplied then
+                applied[#applied + 1] = SCHEMA_PATCHES[index].label
+            end
+            runPatch(index + 1, applied)
+        end)
+    end
+
+    runPatch(1, {})
+end
+
+function LiBridgeServerDatabase.RepairSchema(cb)
+    cb = cb or function() end
+
+    LiBridgeServerDatabase.Install(function(installOk, installReason)
+        if not installOk and installReason ~= 'disabled' and installReason ~= 'complete' then
+            cb(false, 'install_failed', installReason)
+            return
+        end
+
+        LiBridgeServerDatabase.EnsureSchemaPatches(function(patchOk, applied)
+            if not patchOk then
+                cb(false, 'patch_failed', nil, applied)
+                return
+            end
+
+            LiBridgeServerDatabase.GetSchemaReport(function(report)
+                cb(report.ok == true, report.ok and 'ok' or 'incomplete', report, applied)
+            end)
+        end)
+    end)
 end
 
 function LiBridgeServerDatabase.SeedFake(cb)
@@ -303,7 +407,12 @@ end
 function LiBridgeServerDatabase.FinishSetup(cb)
     cb = cb or function() end
 
-    LiBridgeServerDatabase.EnsureSchemaPatches(function()
+    LiBridgeServerDatabase.EnsureSchemaPatches(function(patchOk)
+        if not patchOk then
+            cb(false, 'patch_failed')
+            return
+        end
+
         LiBridgeServerDatabase.SeedFake(function(ok, reason)
             cb(ok, reason)
         end)
