@@ -30,6 +30,7 @@ RegisterNetEvent('ec_lifeinvader:client:openNui', function(payload)
         player = payload.player,
         ads = payload.ads,
         history = payload.history,
+        myAds = payload.myAds,
         categories = payload.categories,
         permissions = payload.permissions,
         ticker = payload.ticker,
@@ -269,6 +270,14 @@ end)
 
 registerTeamCallback('teamUpdateAd', function(requestId, data)
     TriggerServerEvent('ec_lifeinvader:server:teamUpdateAd', requestId, data.id, data.payload or {})
+end)
+
+registerTeamCallback('teamGetAdDetail', function(requestId, data)
+    TriggerServerEvent('ec_lifeinvader:server:teamGetAdDetail', requestId, data.adId)
+end)
+
+registerTeamCallback('teamSaveAdFull', function(requestId, data)
+    TriggerServerEvent('ec_lifeinvader:server:teamSaveAdFull', requestId, data.adId, data.payload or {})
 end)
 
 registerTeamCallback('teamSetAdStatus', function(requestId, data)

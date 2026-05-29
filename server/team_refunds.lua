@@ -1,5 +1,9 @@
 --[[ ec_lifeinvader — Team: Rückerstattungen ]]
 
+local function trim(value)
+    return tostring(value or ''):gsub('^%s+', ''):gsub('%s+$', '')
+end
+
 local function refundsConfig()
     return Config.Refunds or {}
 end
@@ -117,10 +121,12 @@ RegisterNetEvent('ec_lifeinvader:server:teamIssueRefund', function(requestId, da
     end
 
     local mode = tostring(data.mode or 'full')
-    local reason = tostring(data.reason or ''):sub(1, 255)
+    local reason = trim(data.reason or '')
     if reason == '' then
-        reason = nil
+        LiBridgeServerTeam.Respond(src, requestId, { ok = false, error = 'reason_required' })
+        return
     end
+    reason = reason:sub(1, 255)
 
     local issuedBy = LiBridge.Server.GetIdentifier(src) or 'team'
 

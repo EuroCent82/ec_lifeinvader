@@ -282,6 +282,8 @@ function LiBridgeServerFeeds.FormatAdRow(row, viewerIdentifier)
     local createdAtUnix = parseDateTimeToUnix(row.created_at)
     local isMine = viewerIdentifier ~= nil and row.identifier == viewerIdentifier
 
+    local status = row.status and resolveFeedStatus(row) or nil
+
     return {
         id = row.id,
         livId = LiBridgeServerFeeds.FormatLivId(row.id),
@@ -303,6 +305,7 @@ function LiBridgeServerFeeds.FormatAdRow(row, viewerIdentifier)
         pricePaid = tonumber(row.price_paid) or 0,
         durationHours = tonumber(row.duration_hours),
         premiumDraft = premium,
+        status = status,
     }
 end
 
@@ -435,6 +438,33 @@ function LiBridgeServerFeeds.GetCategories(cb)
     )
 end
 
+function LiBridgeServerFeeds.GetPlayerMyAds(identifier, cb)
+    if not identifier then
+        cb({})
+        return
+    end
+
+    LiBridge.MySQL.Query(
+        [[SELECT id, identifier, author_name, title, content, category, phone, anonymous,
+                 premium, spotlight_until, duration_hours, price_paid, status, created_at, expires_at
+          FROM lifeinvader_feeds
+          WHERE identifier = ?
+            AND (
+              (status = 'active' AND expires_at > NOW())
+              OR status = 'blocked'
+            )
+          ORDER BY created_at DESC]],
+        { identifier },
+        function(result)
+            local ads = {}
+            for _, row in ipairs(result or {}) do
+                ads[#ads + 1] = LiBridgeServerFeeds.FormatAdRow(row, identifier)
+            end
+            cb(ads)
+        end
+    )
+end
+
 function LiBridgeServerFeeds.GetActiveAds(viewerIdentifier, cb)
     LiBridge.MySQL.Query(
         [[SELECT id, identifier, author_name, title, content, category, phone, anonymous,
@@ -527,12 +557,15 @@ function LiBridgeServerFeeds.LoadOpenData(viewerIdentifier, cb)
         LiBridgeServerFeeds.GetActiveAds(viewerIdentifier, function(ads)
             LiBridgeServerFeeds.GetTickerItems(function(ticker)
                 LiBridgeServerFeeds.GetPlayerFeedHistory(viewerIdentifier, function(history)
-                    cb({
-                        categories = categories,
-                        ads = ads,
-                        ticker = ticker,
-                        history = history,
-                    })
+                    LiBridgeServerFeeds.GetPlayerMyAds(viewerIdentifier, function(myAds)
+                        cb({
+                            categories = categories,
+                            ads = ads,
+                            ticker = ticker,
+                            history = history,
+                            myAds = myAds,
+                        })
+                    end)
                 end)
             end)
         end)

@@ -69,6 +69,7 @@ local function openPlayerNui(src)
 
                 LiBridgeServerAdDuration.GetPlayerInfo(identifier, function(durationInfo)
                     payload.adDuration = durationInfo
+                    payload.myAds = feedData.myAds or {}
                     TriggerClientEvent('ec_lifeinvader:client:openNui', src, payload)
                 end)
             end)
