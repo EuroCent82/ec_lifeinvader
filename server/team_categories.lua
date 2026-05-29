@@ -169,6 +169,49 @@ RegisterNetEvent('ec_lifeinvader:server:teamDeleteCategory', function(requestId,
     )
 end)
 
+RegisterNetEvent('ec_lifeinvader:server:teamReorderCategories', function(requestId, orderList)
+    local src = source
+
+    if not LiBridgeServerTeam.Guard(src, requestId, 'categories') then
+        return
+    end
+
+    orderList = orderList or {}
+    if #orderList == 0 then
+        LiBridgeServerTeam.Respond(src, requestId, { ok = false, error = 'invalid_input' })
+        return
+    end
+
+    local index = 1
+
+    local function applyNext()
+        if index > #orderList then
+            LiBridgeServerTeam.Respond(src, requestId, { ok = true })
+            return
+        end
+
+        local entry = orderList[index]
+        local id = tonumber(entry.id)
+        local sortOrder = math.floor(tonumber(entry.sortOrder) or (index - 1))
+
+        if not id then
+            LiBridgeServerTeam.Respond(src, requestId, { ok = false, error = 'invalid_id' })
+            return
+        end
+
+        LiBridge.MySQL.Execute(
+            'UPDATE lifeinvader_categories SET sort_order = ? WHERE id = ?',
+            { sortOrder, id },
+            function()
+                index = index + 1
+                applyNext()
+            end
+        )
+    end
+
+    applyNext()
+end)
+
 RegisterNetEvent('ec_lifeinvader:server:teamCreateCategory', function(requestId, data)
     local src = source
 
@@ -188,10 +231,13 @@ RegisterNetEvent('ec_lifeinvader:server:teamCreateCategory', function(requestId,
 
     local createdBy = LiBridge.Server.GetIdentifier(src)
 
+    LiBridge.MySQL.Query('SELECT COALESCE(MAX(sort_order), -1) + 1 AS next_order FROM lifeinvader_categories', {}, function(result)
+        local sortOrder = tonumber(result and result[1] and result[1].next_order) or 0
+
     LiBridge.MySQL.Insert(
         [[INSERT INTO lifeinvader_categories (slug, label, icon, enabled, sort_order, created_by)
-          VALUES (?, ?, ?, 1, 0, ?)]],
-        { slug, label, icon, createdBy },
+          VALUES (?, ?, ?, 1, ?, ?)]],
+        { slug, label, icon, sortOrder, createdBy },
         function(insertId)
             if not insertId then
                 LiBridgeServerTeam.Respond(src, requestId, { ok = false, error = 'duplicate_or_db_failed' })
@@ -206,9 +252,10 @@ RegisterNetEvent('ec_lifeinvader:server:teamCreateCategory', function(requestId,
                     label = label,
                     icon = icon,
                     enabled = true,
-                    sortOrder = 0,
+                    sortOrder = sortOrder,
                 },
             })
         end
     )
+    end)
 end)

@@ -63,6 +63,18 @@ CREATE TABLE IF NOT EXISTS `lifeinvader_categories` (
     UNIQUE KEY `uk_lifeinvader_categories_slug` (`slug`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `lifeinvader_ticker` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `message` VARCHAR(255) NOT NULL,
+    `enabled` TINYINT(1) NOT NULL DEFAULT 1,
+    `sort_order` INT NOT NULL DEFAULT 0,
+    `created_by` VARCHAR(128) NULL COMMENT 'QBox citizenid (Team)',
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `idx_lifeinvader_ticker_sort` (`sort_order`, `enabled`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS `lifeinvader_vouchers` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `code` VARCHAR(32) NOT NULL COMMENT 'LIV-1234-5678',

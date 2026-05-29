@@ -454,29 +454,51 @@ function LiBridgeServerFeeds.GetActiveAds(viewerIdentifier, cb)
 end
 
 function LiBridgeServerFeeds.GetTickerItems(cb)
-    local items = {}
     local cfg = Config.Ticker or {}
 
-    if cfg.enabled ~= false and type(cfg.items) == 'table' then
-        for i = 1, #cfg.items do
-            items[#items + 1] = cfg.items[i]
-        end
+    if cfg.enabled == false then
+        cb({})
+        return
     end
 
     LiBridge.MySQL.Query(
-        [[SELECT title, author_name
-          FROM lifeinvader_feeds
-          WHERE status = 'active'
-            AND ticker_until IS NOT NULL
-            AND ticker_until > NOW()
-          ORDER BY ticker_until DESC
-          LIMIT 12]],
+        [[SELECT message
+          FROM lifeinvader_ticker
+          WHERE enabled = 1
+          ORDER BY sort_order ASC, id ASC]],
         {},
-        function(result)
-            for _, row in ipairs(result or {}) do
-                items[#items + 1] = ('+++ %s — %s +++'):format(row.title, row.author_name)
+        function(customRows)
+            local items = {}
+
+            for _, row in ipairs(customRows or {}) do
+                local message = tostring(row.message or ''):gsub('^%s+', ''):gsub('%s+$', '')
+                if message ~= '' then
+                    items[#items + 1] = message
+                end
             end
-            cb(items)
+
+            if #items == 0 and type(cfg.items) == 'table' then
+                for i = 1, #cfg.items do
+                    items[#items + 1] = cfg.items[i]
+                end
+            end
+
+            LiBridge.MySQL.Query(
+                [[SELECT title, author_name
+                  FROM lifeinvader_feeds
+                  WHERE status = 'active'
+                    AND ticker_until IS NOT NULL
+                    AND ticker_until > NOW()
+                  ORDER BY ticker_until DESC
+                  LIMIT 12]],
+                {},
+                function(result)
+                    for _, row in ipairs(result or {}) do
+                        items[#items + 1] = ('+++ %s — %s +++'):format(row.title, row.author_name)
+                    end
+                    cb(items)
+                end
+            )
         end
     )
 end

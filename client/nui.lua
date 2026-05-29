@@ -214,6 +214,30 @@ registerTeamCallback('teamDeleteCategory', function(requestId, data)
     TriggerServerEvent('ec_lifeinvader:server:teamDeleteCategory', requestId, data.id)
 end)
 
+registerTeamCallback('teamReorderCategories', function(requestId, data)
+    TriggerServerEvent('ec_lifeinvader:server:teamReorderCategories', requestId, data.order)
+end)
+
+registerTeamCallback('teamListTicker', function(requestId)
+    TriggerServerEvent('ec_lifeinvader:server:teamListTicker', requestId)
+end)
+
+registerTeamCallback('teamCreateTicker', function(requestId, data)
+    TriggerServerEvent('ec_lifeinvader:server:teamCreateTicker', requestId, data)
+end)
+
+registerTeamCallback('teamUpdateTicker', function(requestId, data)
+    TriggerServerEvent('ec_lifeinvader:server:teamUpdateTicker', requestId, data)
+end)
+
+registerTeamCallback('teamDeleteTicker', function(requestId, data)
+    TriggerServerEvent('ec_lifeinvader:server:teamDeleteTicker', requestId, data.id)
+end)
+
+registerTeamCallback('teamReorderTicker', function(requestId, data)
+    TriggerServerEvent('ec_lifeinvader:server:teamReorderTicker', requestId, data.order)
+end)
+
 RegisterNUICallback('contact', function(data, cb)
     local requestId = ('%s_%s'):format(GetGameTimer(), math.random(10000, 99999))
     pendingContacts[requestId] = cb

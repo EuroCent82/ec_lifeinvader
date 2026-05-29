@@ -6,6 +6,7 @@ local REQUIRED_TABLES = {
     'lifeinvader',
     'lifeinvader_feeds',
     'lifeinvader_categories',
+    'lifeinvader_ticker',
     'lifeinvader_vouchers',
     'lifeinvader_voucher_redemptions',
     'lifeinvader_refunds',

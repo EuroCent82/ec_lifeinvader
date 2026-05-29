@@ -563,6 +563,7 @@ Config.Admin = {
     features = {
         categories = true,
         vouchers = true,
+        ticker = true,
         ads = true,
         refunds = true,
         adSlots = true,
@@ -620,13 +621,13 @@ Config.Vouchers = {
 --
 --     Beim Start prüft das Script jede Tabelle einzeln in information_schema.
 --     Fehlt mindestens eine → passendes install_*.sql ausführen (CREATE IF NOT EXISTS).
---     Sind alle 6 Tabellen da → nichts tun.
+--     Sind alle 7 Tabellen da → nichts tun.
 --
 --       esx     → sql/install_esx.sql
 --       qbcore  → sql/install_qbcore.sql
 --       qbox    → sql/install_qbox.sql
 --
---     Tabellen: lifeinvader, lifeinvader_feeds, lifeinvader_categories,
+--     Tabellen: lifeinvader, lifeinvader_feeds, lifeinvader_categories, lifeinvader_ticker,
 --               lifeinvader_vouchers, lifeinvader_voucher_redemptions, lifeinvader_refunds
 --
 --     autoInstall     → true: fehlende Tabellen automatisch anlegen
@@ -635,8 +636,7 @@ Config.Vouchers = {
 --
 --     Config.fake = true  → Demo-Kategorien & Beispiel-Anzeigen (fake_*.sql)
 --
---     Live-Ticker aus Anzeigen: Spalte ticker_until in lifeinvader_feeds
---     (keine extra Tabelle nötig — Premium-Option setzt ticker_until)
+--     Live-Ticker: lifeinvader_ticker (Team-Panel) + Premium-Anzeigen (ticker_until)
 --
 --     Admin/txAdmin: livdb check (Status) | livdb fix (Tabellen + Spalten-Patches)
 --     Berechtigung: Config.Permissions.dbCheck (Gruppe admin/superadmin oder ACE)
