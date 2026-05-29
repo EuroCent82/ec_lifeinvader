@@ -546,6 +546,7 @@ function LiBridgeServerFeeds.BuildUiConfig()
         maxTitleLength = Config.MaxTitleLength or 40,
         maxContentLength = Config.MaxContentLength or 500,
         premiumFeatures = Config.PremiumFeatures or {},
+        categoryIcons = Config.CategoryIcons or {},
         deposit = Config.Deposit or { cash = true, bank = true },
         withdraw = Config.Withdraw or { cash = true, bank = false },
     }

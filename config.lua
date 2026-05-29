@@ -425,12 +425,85 @@ Config.FeedNotifications = {
 --------------------------------------------------------------------------------
 -- 11) Kategorien — aus der Datenbank (lifeinvader_categories), nicht aus Config
 --
---     Anlegen/Bearbeiten: Team-Panel im Tablet oder SQL
+--     Anlegen/Bearbeiten: Team-Panel im Tablet (Icon-Auswahl aus CategoryIcons)
 --     Erst-Installation / Demo: sql/fake_*.sql (wenn Config.fake = true)
 --
---     Seed-Vorlage (nur Referenz — wird vom Code nicht gelesen):
---       verkauf, dienstleistungen, jobs, events, sonstiges
+--     id    → Font Awesome 6 (free-solid), z. B. "car", "mobile-screen"
+--     label → Anzeige im Team-Panel (frei wählbar)
 --------------------------------------------------------------------------------
+
+Config.CategoryIcons = {
+    { id = 'tags', label = 'Verkauf' },
+    { id = 'handshake', label = 'Dienstleistung' },
+    { id = 'briefcase', label = 'Jobs' },
+    { id = 'calendar-days', label = 'Events' },
+    { id = 'ellipsis', label = 'Sonstiges' },
+    { id = 'star', label = 'Premium' },
+    { id = 'bolt', label = 'Aktion' },
+    -- Fahrzeuge
+    { id = 'car', label = 'PKW' },
+    { id = 'truck', label = 'LKW' },
+    { id = 'motorcycle', label = 'Motorrad' },
+    { id = 'bus', label = 'Bus' },
+    { id = 'taxi', label = 'Taxi' },
+    { id = 'bicycle', label = 'Fahrrad' },
+    { id = 'ship', label = 'Boot' },
+    { id = 'anchor', label = 'Anker / Hafen' },
+    { id = 'helicopter', label = 'Helikopter' },
+    { id = 'plane', label = 'Flugzeug' },
+    { id = 'gas-pump', label = 'Tankstelle' },
+    -- Elektronik & Kommunikation
+    { id = 'microchip', label = 'Elektronik' },
+    { id = 'mobile-screen', label = 'Handy' },
+    { id = 'tablet-screen-button', label = 'Tablet' },
+    { id = 'laptop', label = 'Laptop' },
+    { id = 'desktop', label = 'Computer (PC)' },
+    { id = 'keyboard', label = 'Tastatur' },
+    { id = 'headphones', label = 'Audio' },
+    { id = 'camera', label = 'Kamera' },
+    { id = 'video', label = 'Video' },
+    { id = 'envelope', label = 'Mail' },
+    { id = 'paper-plane', label = 'Senden' },
+    { id = 'trash-can', label = 'Mülleimer' },
+    -- Freizeit & RP
+    { id = 'gamepad', label = 'Controller / Gaming' },
+    { id = 'puzzle-piece', label = 'Spielzeug' },
+    { id = 'masks-theater', label = 'RP / Theater' },
+    { id = 'users', label = 'Gruppe / Team' },
+    { id = 'user-tie', label = 'Business' },
+    -- Handwerk & Sicherheit
+    { id = 'wrench', label = 'Werkzeug' },
+    { id = 'hammer', label = 'Hammer / Bau' },
+    { id = 'screwdriver-wrench', label = 'Mechanik' },
+    { id = 'toolbox', label = 'Toolbox' },
+    { id = 'gun', label = 'Waffen' },
+    { id = 'shield-halved', label = 'Sicherheit' },
+    { id = 'user-shield', label = 'Schutz / VIP' },
+    -- Immobilien & Handel
+    { id = 'building', label = 'Immobilien' },
+    { id = 'house', label = 'Haus' },
+    { id = 'store', label = 'Laden' },
+    { id = 'cart-shopping', label = 'Shop' },
+    { id = 'gem', label = 'Luxus' },
+    { id = 'shirt', label = 'Kleidung' },
+    { id = 'sack-dollar', label = 'Finanzen' },
+    { id = 'wallet', label = 'Geld / Wallet' },
+    -- Gastronomie & Lifestyle
+    { id = 'utensils', label = 'Gastronomie' },
+    { id = 'beer-mug-empty', label = 'Bar / Club' },
+    { id = 'wine-glass', label = 'Wein / Bar' },
+    { id = 'tree', label = 'Natur / Outdoor' },
+    { id = 'paw', label = 'Tiere' },
+    { id = 'heart', label = 'Gesundheit / Social' },
+    { id = 'hospital', label = 'Medizin' },
+    { id = 'stethoscope', label = 'Arzt' },
+    { id = 'graduation-cap', label = 'Bildung' },
+    { id = 'key', label = 'Schlüssel / Zugang' },
+    { id = 'lock', label = 'Sicher / Privat' },
+    { id = 'map-location-dot', label = 'Standort' },
+    { id = 'newspaper', label = 'News / Medien' },
+    { id = 'rectangle-ad', label = 'Werbung' },
+}
 
 --------------------------------------------------------------------------------
 -- 12) Anzeigen schalten — Laufzeit, Text, Limits

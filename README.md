@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/EuroCent82/ec_lifeinvader/releases"><img src="https://img.shields.io/badge/Version-1.1.29-ff3b30?style=for-the-badge" alt="Version 1.1.27" /></a>
+  <a href="https://github.com/EuroCent82/ec_lifeinvader/releases"><img src="https://img.shields.io/badge/Version-1.1.30-ff3b30?style=for-the-badge" alt="Version 1.1.27" /></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="MIT License" /></a>
 </p>
 
@@ -100,6 +100,11 @@ LifeInvader nutzt **Sprite 77** (rotes **„L“** auf der Karte). Der Name **�
 Eigenen Build prüfen: Client-Konsole / Server — FiveM **Game Build**-Nummer (z. B. `3407`).
 
 ---
+
+## Version 1.1.30
+
+- **Fix Live-Ticker:** Lauftext läuft vollständig durch (kein doppelter Text bei einem Eintrag)
+- **Kategorien:** `Config.CategoryIcons` + Icon-Picker im Team-Panel
 
 ## Version 1.1.29
 
