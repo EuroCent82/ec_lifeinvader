@@ -43,6 +43,8 @@ CREATE TABLE IF NOT EXISTS `lifeinvader_feeds` (
     `spotlight_until` TIMESTAMP NULL DEFAULT NULL,
     `anonym_until` TIMESTAMP NULL DEFAULT NULL,
     `ticker_until` TIMESTAMP NULL DEFAULT NULL,
+    `ticker_enabled` TINYINT(1) NOT NULL DEFAULT 1,
+    `ticker_sort_order` INT NULL DEFAULT NULL,
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `expires_at` TIMESTAMP NOT NULL,
     PRIMARY KEY (`id`),

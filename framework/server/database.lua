@@ -33,6 +33,18 @@ local SCHEMA_PATCHES = {
         alter = 'ALTER TABLE lifeinvader_feeds ADD COLUMN ticker_until TIMESTAMP NULL DEFAULT NULL AFTER anonym_until',
     },
     {
+        table = 'lifeinvader_feeds',
+        column = 'ticker_enabled',
+        label = 'lifeinvader_feeds.ticker_enabled',
+        alter = 'ALTER TABLE lifeinvader_feeds ADD COLUMN ticker_enabled TINYINT(1) NOT NULL DEFAULT 1 AFTER ticker_until',
+    },
+    {
+        table = 'lifeinvader_feeds',
+        column = 'ticker_sort_order',
+        label = 'lifeinvader_feeds.ticker_sort_order',
+        alter = 'ALTER TABLE lifeinvader_feeds ADD COLUMN ticker_sort_order INT NULL DEFAULT NULL AFTER ticker_enabled',
+    },
+    {
         table = 'lifeinvader',
         column = 'ad_slot_bonus',
         label = 'lifeinvader.ad_slot_bonus',

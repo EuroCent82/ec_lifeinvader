@@ -213,10 +213,30 @@ RegisterNetEvent('ec_lifeinvader:server:postAd', function(requestId, data)
 
     local renewFromId = tonumber(data.renewFromId)
     local extendFromId = tonumber(data.extendFromId)
+    local wantsTicker = tickerSql ~= 'NULL'
 
     if renewFromId and extendFromId then
         respondPost(src, requestId, { ok = false, error = 'invalid_request' })
         return
+    end
+
+    local function ensureTickerCapacity(excludeFeedId, cb)
+        if not wantsTicker then
+            cb()
+            return
+        end
+
+        LiBridgeServerFeeds.CountActiveTickerAds(function(count)
+            if count >= LiBridgeServerFeeds.GetTickerMaxSlots() then
+                respondPost(src, requestId, {
+                    ok = false,
+                    error = 'ticker_slots_full',
+                    maxSlots = LiBridgeServerFeeds.GetTickerMaxSlots(),
+                })
+                return
+            end
+            cb()
+        end, excludeFeedId)
     end
 
     local function finishPost(chargePrice)
@@ -314,6 +334,8 @@ RegisterNetEvent('ec_lifeinvader:server:postAd', function(requestId, data)
                     return
                 end
 
+                ensureTickerCapacity(extendFromId, function()
+                local tickerEnabledClause = wantsTicker and ', ticker_enabled = 1' or ''
                 LiBridgeServerAccount.RemoveBalance(identifier, chargePrice, function(paid, balance, payErr)
                     if not paid then
                         respondPost(src, requestId, {
@@ -338,9 +360,9 @@ RegisterNetEvent('ec_lifeinvader:server:postAd', function(requestId, data)
                             expires_at = DATE_ADD(expires_at, INTERVAL %d HOUR),
                             spotlight_until = %s,
                             anonym_until = %s,
-                            ticker_until = %s
+                            ticker_until = %s%s
                         WHERE id = ? AND identifier = ? AND status = 'active'
-                    ]]):format(duration.hours, spotlightSql, anonymSql, tickerSql)
+                    ]]):format(duration.hours, spotlightSql, anonymSql, tickerSql, tickerEnabledClause)
 
                     LiBridge.MySQL.Execute(updateQuery, {
                         authorName,
@@ -377,6 +399,7 @@ RegisterNetEvent('ec_lifeinvader:server:postAd', function(requestId, data)
                     end)
                 end)
                 end)
+                end)
             end
         )
         return
@@ -401,7 +424,9 @@ RegisterNetEvent('ec_lifeinvader:server:postAd', function(requestId, data)
                     end
 
                     requireAdSlot(identifier, src, requestId, function()
-                        finishPost(grossPrice)
+                        ensureTickerCapacity(nil, function()
+                            finishPost(grossPrice)
+                        end)
                     end)
                 end)
             end
@@ -416,7 +441,9 @@ RegisterNetEvent('ec_lifeinvader:server:postAd', function(requestId, data)
         end
 
         requireAdSlot(identifier, src, requestId, function()
-            finishPost(grossPrice)
+            ensureTickerCapacity(nil, function()
+                finishPost(grossPrice)
+            end)
         end)
     end)
 end)

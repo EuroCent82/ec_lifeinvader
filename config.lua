@@ -391,21 +391,15 @@ Config.OpenHours = {
 --------------------------------------------------------------------------------
 -- 10b) Live-Ticker — Lauftext unter der Kopfzeile
 --
---     enabled = false  → Ticker ausblenden
---     items           → statische Nachrichten (derzeit aus Config)
---
---     Geplant: automatische Einträge aus Spotlight-Anzeigen / Server-Events
---     (Server sendet beim Öffnen payload.ticker an die NUI)
+--     enabled = false       → Ticker komplett aus
+--     maxActiveSlots = 5    → max. gleichzeitig laufende Live-Ticker-Anzeigen
+--     Einträge = Premium Live-Ticker: +++ Anzeigen-Titel +++ (neueste zuerst)
+--     Team-Panel: alle Einträge, aktiv/inaktiv, Reihenfolge — leer = kein Banner
 --------------------------------------------------------------------------------
 
 Config.Ticker = {
     enabled = true,
-    items = {
-        '+++ BRANDNEU: LifeInvader bietet jetzt Premium Spotlight-Anzeigen für alle Bürger an! +++',
-        "+++ Benny's Motorworks sucht Verstärzung! Bewerbungen im Jobs-Tab einreichen +++",
-        '+++ Wetteraussichten: Sonnig in Los Santos mit leichter Brise am Vespucci Beach +++',
-        '+++ LS Customs meldet Rekordumsätze bei Tuningteilen +++',
-    },
+    maxActiveSlots = 5,
 }
 
 --------------------------------------------------------------------------------
@@ -636,7 +630,7 @@ Config.Vouchers = {
 --
 --     Config.fake = true  → Demo-Kategorien & Beispiel-Anzeigen (fake_*.sql)
 --
---     Live-Ticker: lifeinvader_ticker (Team-Panel) + Premium-Anzeigen (ticker_until)
+--     Live-Ticker: Premium-Anzeigen (ticker_until, ticker_enabled, ticker_sort_order)
 --
 --     Admin/txAdmin: livdb check (Status) | livdb fix (Tabellen + Spalten-Patches)
 --     Berechtigung: Config.Permissions.dbCheck (Gruppe admin/superadmin oder ACE)

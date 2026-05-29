@@ -453,6 +453,42 @@ function LiBridgeServerFeeds.GetActiveAds(viewerIdentifier, cb)
     )
 end
 
+function LiBridgeServerFeeds.FormatTickerLine(title)
+    local text = tostring(title or ''):gsub('^%s+', ''):gsub('%s+$', '')
+    if text == '' then
+        return nil
+    end
+    return ('+++ %s +++'):format(text)
+end
+
+function LiBridgeServerFeeds.GetTickerMaxSlots()
+    local cfg = Config.Ticker or {}
+    return math.max(1, math.floor(tonumber(cfg.maxActiveSlots) or 5))
+end
+
+function LiBridgeServerFeeds.CountActiveTickerAds(cb, excludeFeedId)
+    local params = {}
+    local excludeSql = ''
+
+    if excludeFeedId then
+        excludeSql = ' AND id <> ?'
+        params[#params + 1] = tonumber(excludeFeedId)
+    end
+
+    LiBridge.MySQL.Query(
+        ([[SELECT COUNT(*) AS count
+          FROM lifeinvader_feeds
+          WHERE status = 'active'
+            AND ticker_until IS NOT NULL
+            AND ticker_until > NOW()
+            AND ticker_enabled = 1%s]]):format(excludeSql),
+        params,
+        function(result)
+            cb(tonumber(result and result[1] and result[1].count) or 0)
+        end
+    )
+end
+
 function LiBridgeServerFeeds.GetTickerItems(cb)
     local cfg = Config.Ticker or {}
 
@@ -461,44 +497,27 @@ function LiBridgeServerFeeds.GetTickerItems(cb)
         return
     end
 
+    local limit = LiBridgeServerFeeds.GetTickerMaxSlots()
+
     LiBridge.MySQL.Query(
-        [[SELECT message
-          FROM lifeinvader_ticker
-          WHERE enabled = 1
-          ORDER BY sort_order ASC, id ASC]],
+        ([[SELECT title
+          FROM lifeinvader_feeds
+          WHERE status = 'active'
+            AND ticker_until IS NOT NULL
+            AND ticker_until > NOW()
+            AND ticker_enabled = 1
+          ORDER BY COALESCE(ticker_sort_order, 999999) ASC, created_at DESC
+          LIMIT %d]]):format(limit),
         {},
-        function(customRows)
+        function(result)
             local items = {}
-
-            for _, row in ipairs(customRows or {}) do
-                local message = tostring(row.message or ''):gsub('^%s+', ''):gsub('%s+$', '')
-                if message ~= '' then
-                    items[#items + 1] = message
+            for _, row in ipairs(result or {}) do
+                local line = LiBridgeServerFeeds.FormatTickerLine(row.title)
+                if line then
+                    items[#items + 1] = line
                 end
             end
-
-            if #items == 0 and type(cfg.items) == 'table' then
-                for i = 1, #cfg.items do
-                    items[#items + 1] = cfg.items[i]
-                end
-            end
-
-            LiBridge.MySQL.Query(
-                [[SELECT title, author_name
-                  FROM lifeinvader_feeds
-                  WHERE status = 'active'
-                    AND ticker_until IS NOT NULL
-                    AND ticker_until > NOW()
-                  ORDER BY ticker_until DESC
-                  LIMIT 12]],
-                {},
-                function(result)
-                    for _, row in ipairs(result or {}) do
-                        items[#items + 1] = ('+++ %s — %s +++'):format(row.title, row.author_name)
-                    end
-                    cb(items)
-                end
-            )
+            cb(items)
         end
     )
 end
