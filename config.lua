@@ -199,6 +199,12 @@ Config.Permissions = {
         ace = 'ec_lifeinvader.dbcheck',
         default = false,
     },
+    --- Tablet von überall öffnen (/lifeinvader) — alternativ reicht team
+    teamOpen = {
+        groups = { 'admin', 'superadmin', 'lifeinvader' },
+        ace = 'ec_lifeinvader.teamOpen',
+        default = false,
+    },
 }
 
 --[[  Permissions einschränken:
@@ -633,9 +639,38 @@ Config.Admin = {
         ticker = true,
         ads = true,
         refunds = true,
+        blacklist = true,
         adSlots = true,
         adDuration = true,
     },
+}
+
+--------------------------------------------------------------------------------
+-- 14b) Team: Tablet von überall — Befehl (Config.Permissions.teamOpen / team)
+--------------------------------------------------------------------------------
+
+Config.TeamRemoteOpen = {
+    enabled = true,
+    command = 'lifeinvader',
+}
+
+--------------------------------------------------------------------------------
+-- 14c) Blacklist — Spieler von Open/Post ausschließen (Team-Tab)
+--------------------------------------------------------------------------------
+
+Config.Blacklist = {
+    enabled = true,
+    maxDays = 30,
+    --- Team mit Config.Permissions.team darf trotz Sperre das Tablet öffnen (Moderation)
+    teamBypass = true,
+}
+
+--------------------------------------------------------------------------------
+-- 14d) Rückerstattungen — Team erstattet auf lifeinvader.balance
+--------------------------------------------------------------------------------
+
+Config.Refunds = {
+    enabled = true,
 }
 
 --------------------------------------------------------------------------------
@@ -688,14 +723,15 @@ Config.Vouchers = {
 --
 --     Beim Start prüft das Script jede Tabelle einzeln in information_schema.
 --     Fehlt mindestens eine → passendes install_*.sql ausführen (CREATE IF NOT EXISTS).
---     Sind alle 7 Tabellen da → nichts tun.
+--     Sind alle 8 Tabellen da → nichts tun.
 --
 --       esx     → sql/install_esx.sql
 --       qbcore  → sql/install_qbcore.sql
 --       qbox    → sql/install_qbox.sql
 --
 --     Tabellen: lifeinvader, lifeinvader_feeds, lifeinvader_categories, lifeinvader_ticker,
---               lifeinvader_vouchers, lifeinvader_voucher_redemptions, lifeinvader_refunds
+--               lifeinvader_vouchers, lifeinvader_voucher_redemptions, lifeinvader_refunds,
+--               lifeinvader_blacklist
 --
 --     autoInstall     → true: fehlende Tabellen automatisch anlegen
 --     skipIfInstalled → legacy (true): nur anlegen wenn Tabellen fehlen (Standard)

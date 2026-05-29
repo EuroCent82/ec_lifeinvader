@@ -4,7 +4,7 @@ game 'gta5'
 author 'EuroCent'
 name 'ec_lifeinvader'
 description 'LifeInvader — Werbeanzeigen-System für FiveM'
-version '1.1.30'
+version '1.1.31'
 
 shared_scripts {
     'config.lua',
@@ -31,6 +31,7 @@ client_scripts {
     'client/phone.lua',
     'client/notifications.lua',
     'client/locations.lua',
+    'client/team_command.lua',
     'client/blip_test.lua',
     'client/main.lua',
 }
@@ -48,6 +49,7 @@ server_scripts {
     'framework/server/permissions.lua',
     'framework/server/init.lua',
     'server/team_core.lua',
+    'server/blacklist.lua',
     'server/ad_slots.lua',
     'server/ad_duration.lua',
     'server/db_check.lua',
@@ -57,6 +59,9 @@ server_scripts {
     'server/team_vouchers.lua',
     'server/team_categories.lua',
     'server/team_ticker.lua',
+    'server/team_blacklist.lua',
+    'server/team_ads.lua',
+    'server/team_refunds.lua',
     'server/feeds.lua',
     'server/feeds_actions.lua',
     'server/account.lua',

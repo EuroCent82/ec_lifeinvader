@@ -118,4 +118,16 @@ CREATE TABLE IF NOT EXISTS `lifeinvader_refunds` (
     KEY `idx_lifeinvader_refunds_identifier` (`identifier`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `lifeinvader_blacklist` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `identifier` VARCHAR(128) NOT NULL COMMENT 'QBCore citizenid',
+    `reason` VARCHAR(255) NULL,
+    `banned_by` VARCHAR(128) NOT NULL COMMENT 'Team-Identifier',
+    `expires_at` TIMESTAMP NULL DEFAULT NULL COMMENT 'NULL = dauerhaft',
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_lifeinvader_blacklist_identifier` (`identifier`),
+    KEY `idx_lifeinvader_blacklist_expires` (`expires_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;

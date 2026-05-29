@@ -32,13 +32,28 @@ local function buildOpenPayload(source, feedData)
     }
 end
 
-RegisterNetEvent('ec_lifeinvader:server:requestOpen', function(locationId)
-    local src = source
-
-    if not LiBridge.Server.HasPermission(src, 'open') then
-        return
+local function canOpenTablet(src)
+    if LiBridge.Server.HasPermission(src, 'open') then
+        return true
     end
+    if LiBridge.Server.HasPermission(src, 'team') then
+        return true
+    end
+    if LiBridge.Server.HasPermission(src, 'teamOpen') then
+        return true
+    end
+    return false
+end
 
+local function teamBypassesBlacklist(src)
+    local cfg = Config.Blacklist or {}
+    if cfg.teamBypass == false then
+        return false
+    end
+    return LiBridge.Server.HasPermission(src, 'team')
+end
+
+local function openPlayerNui(src)
     local identifier = LiBridge.Server.GetIdentifier(src)
 
     LiBridgeServerFeeds.LoadOpenData(identifier, function(feedData)
@@ -59,4 +74,49 @@ RegisterNetEvent('ec_lifeinvader:server:requestOpen', function(locationId)
             end)
         end)
     end)
+end
+
+local function tryOpenTablet(src)
+    local identifier = LiBridge.Server.GetIdentifier(src)
+    if not identifier then
+        return
+    end
+
+    LiBridgeServerBlacklist.IsBanned(identifier, function(banned, banInfo)
+        if banned and not teamBypassesBlacklist(src) then
+            TriggerClientEvent('ec_lifeinvader:client:openBlocked', src, banInfo or {})
+            return
+        end
+
+        openPlayerNui(src)
+    end)
+end
+
+RegisterNetEvent('ec_lifeinvader:server:requestOpen', function(_locationId)
+    local src = source
+
+    if not canOpenTablet(src) then
+        return
+    end
+
+    tryOpenTablet(src)
+end)
+
+RegisterNetEvent('ec_lifeinvader:server:teamRemoteOpen', function()
+    local src = source
+    local cfg = Config.TeamRemoteOpen or {}
+
+    if cfg.enabled == false then
+        return
+    end
+
+    if not LiBridge.Server.HasPermission(src, 'teamOpen') and not LiBridge.Server.HasPermission(src, 'team') then
+        return
+    end
+
+    if not canOpenTablet(src) then
+        return
+    end
+
+    tryOpenTablet(src)
 end)

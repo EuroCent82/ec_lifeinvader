@@ -9,6 +9,19 @@ local pendingPostAds = {}
 local pendingDeleteAds = {}
 local pendingTeam = {}
 
+RegisterNetEvent('ec_lifeinvader:client:openBlocked', function(banInfo)
+    banInfo = banInfo or {}
+    local reason = banInfo.reason
+    local message = 'Du bist von LifeInvader gesperrt.'
+    if reason and reason ~= '' then
+        message = message .. ' Grund: ' .. tostring(reason)
+    end
+
+    if LiBridge and LiBridge.Client and LiBridge.Client.Notify then
+        LiBridge.Client.Notify(message, 'error')
+    end
+end)
+
 RegisterNetEvent('ec_lifeinvader:client:openNui', function(payload)
     nuiOpen = true
     SetNuiFocus(true, true)
@@ -236,6 +249,42 @@ end)
 
 registerTeamCallback('teamReorderTicker', function(requestId, data)
     TriggerServerEvent('ec_lifeinvader:server:teamReorderTicker', requestId, data.order)
+end)
+
+registerTeamCallback('teamListBlacklist', function(requestId)
+    TriggerServerEvent('ec_lifeinvader:server:teamListBlacklist', requestId)
+end)
+
+registerTeamCallback('teamBanPlayer', function(requestId, data)
+    TriggerServerEvent('ec_lifeinvader:server:teamBanPlayer', requestId, data)
+end)
+
+registerTeamCallback('teamUnbanPlayer', function(requestId, data)
+    TriggerServerEvent('ec_lifeinvader:server:teamUnbanPlayer', requestId, data.identifier)
+end)
+
+registerTeamCallback('teamListAds', function(requestId, data)
+    TriggerServerEvent('ec_lifeinvader:server:teamListAds', requestId, data.filters or {})
+end)
+
+registerTeamCallback('teamUpdateAd', function(requestId, data)
+    TriggerServerEvent('ec_lifeinvader:server:teamUpdateAd', requestId, data.id, data.payload or {})
+end)
+
+registerTeamCallback('teamSetAdStatus', function(requestId, data)
+    TriggerServerEvent('ec_lifeinvader:server:teamSetAdStatus', requestId, data.id, data.status)
+end)
+
+registerTeamCallback('teamListRefunds', function(requestId)
+    TriggerServerEvent('ec_lifeinvader:server:teamListRefunds', requestId)
+end)
+
+registerTeamCallback('teamLookupAdRefund', function(requestId, data)
+    TriggerServerEvent('ec_lifeinvader:server:teamLookupAdRefund', requestId, data.feedId)
+end)
+
+registerTeamCallback('teamIssueRefund', function(requestId, data)
+    TriggerServerEvent('ec_lifeinvader:server:teamIssueRefund', requestId, data)
 end)
 
 RegisterNUICallback('contact', function(data, cb)

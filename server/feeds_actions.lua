@@ -164,6 +164,17 @@ RegisterNetEvent('ec_lifeinvader:server:postAd', function(requestId, data)
         return
     end
 
+    LiBridgeServerBlacklist.IsBanned(identifier, function(banned)
+        if banned then
+            respondPost(src, requestId, { ok = false, error = 'blacklisted' })
+            return
+        end
+
+        postAdContinue(src, requestId, data, identifier)
+    end)
+end)
+
+local function postAdContinue(src, requestId, data, identifier)
     local duration = findDuration(data.durationId)
     if not duration then
         respondPost(src, requestId, { ok = false, error = 'invalid_duration' })
@@ -446,7 +457,7 @@ RegisterNetEvent('ec_lifeinvader:server:postAd', function(requestId, data)
             end)
         end)
     end)
-end)
+end
 
 RegisterNetEvent('ec_lifeinvader:server:deleteAd', function(requestId, adId)
     local src = source
