@@ -55,25 +55,40 @@ end
 
 local function openPlayerNui(src)
     local identifier = LiBridge.Server.GetIdentifier(src)
+    local feedData
+    local accountRow
+    local activeCount
+    local pending = 3
 
-    LiBridgeServerFeeds.LoadOpenData(identifier, function(feedData)
+    local function tryFinish()
+        pending = pending - 1
+        if pending > 0 or not feedData or not accountRow or activeCount == nil then
+            return
+        end
+
         local payload = buildOpenPayload(src, feedData)
+        payload.player.money = tonumber(accountRow.balance) or 0
+        payload.adSlots = LiBridgeServerAdSlots.BuildSlotInfoFromAccount(accountRow, activeCount)
+        payload.adSlotPolicy = LiBridgeServerAdSlots.BuildPolicyForUi()
+        payload.adDurationPolicy = LiBridgeServerAdDuration.BuildPolicyForUi()
+        payload.adDuration = LiBridgeServerAdDuration.BuildPlayerInfoFromAccount(accountRow)
+        payload.myAds = feedData.myAds or {}
+        TriggerClientEvent('ec_lifeinvader:client:openNui', src, payload)
+    end
 
-        LiBridgeServerAccount.GetBalance(identifier, function(balance)
-            payload.player.money = balance
+    LiBridgeServerFeeds.LoadOpenData(identifier, function(data)
+        feedData = data
+        tryFinish()
+    end)
 
-            LiBridgeServerAdSlots.GetPlayerAdSlotInfo(identifier, function(slotInfo)
-                payload.adSlots = slotInfo
-                payload.adSlotPolicy = LiBridgeServerAdSlots.BuildPolicyForUi()
-                payload.adDurationPolicy = LiBridgeServerAdDuration.BuildPolicyForUi()
+    LiBridgeServerAccount.GetAccountRow(identifier, function(row)
+        accountRow = row
+        tryFinish()
+    end)
 
-                LiBridgeServerAdDuration.GetPlayerInfo(identifier, function(durationInfo)
-                    payload.adDuration = durationInfo
-                    payload.myAds = feedData.myAds or {}
-                    TriggerClientEvent('ec_lifeinvader:client:openNui', src, payload)
-                end)
-            end)
-        end)
+    LiBridgeServerAdSlots.GetActiveAdCount(identifier, function(count)
+        activeCount = count
+        tryFinish()
     end)
 end
 

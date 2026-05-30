@@ -86,8 +86,27 @@ function LiBridgeServerAdSlots.GetActiveAdCount(identifier, cb)
     )
 end
 
-function LiBridgeServerAdSlots.GetPlayerAdSlotInfo(identifier, cb)
+function LiBridgeServerAdSlots.BuildSlotInfoFromAccount(accountRow, activeCount)
+    local bonus = math.max(0, math.floor(tonumber(accountRow and accountRow.ad_slot_bonus) or 0))
+    local maxAds = clampMax(LiBridgeServerAdSlots.GetDefaultMax() + bonus)
+    local active = math.max(0, math.floor(tonumber(activeCount) or 0))
+
+    return {
+        active = active,
+        max = maxAds,
+        bonus = bonus,
+        defaultMax = LiBridgeServerAdSlots.GetDefaultMax(),
+        canPost = active < maxAds,
+    }
+end
+
+function LiBridgeServerAdSlots.GetPlayerAdSlotInfo(identifier, cb, accountRow, activeCount)
     cb = cb or function() end
+
+    if accountRow ~= nil and activeCount ~= nil then
+        cb(LiBridgeServerAdSlots.BuildSlotInfoFromAccount(accountRow, activeCount))
+        return
+    end
 
     LiBridgeServerAdSlots.GetActiveAdCount(identifier, function(active)
         LiBridgeServerAdSlots.GetMaxActiveAds(identifier, function(maxAds)

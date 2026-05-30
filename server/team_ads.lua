@@ -367,12 +367,13 @@ RegisterNetEvent('ec_lifeinvader:server:teamSaveAdFull', function(requestId, adI
     local tickerSql = 'NULL'
     local tickerEnabled = 0
 
+    if isAnonymous then
+        anonymSql = ('DATE_ADD(NOW(), INTERVAL %d HOUR)'):format(hours)
+    end
+
     if type(premium) == 'table' then
         if premium.spotlight and premium.spotlight.days then
             spotlightSql = sqlIntervalDays(premium.spotlight.days)
-        end
-        if premium.anonym and premium.anonym.days then
-            anonymSql = sqlIntervalDays(premium.anonym.days)
         end
         if premium.liveticker and premium.liveticker.days then
             tickerSql = sqlIntervalDays(premium.liveticker.days)

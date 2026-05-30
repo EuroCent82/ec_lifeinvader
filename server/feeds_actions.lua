@@ -28,23 +28,25 @@ local function anonymDaysMax(hours)
     return math.min(adDaysMax(hours), capDays)
 end
 
-local function premiumCost(premium, hours)
+local function premiumCost(premium, hours, anonymous)
     local total = 0
     local features = Config.PremiumFeatures or {}
     local maxDays = adDaysMax(hours)
 
+    if anonymous == true then
+        total = total + ((features.anonym and features.anonym.costPerDay or 0) * maxDays)
+    elseif type(premium) == 'table' and premium.anonym and type(premium.anonym.days) == 'number' then
+        local days = math.max(1, math.min(math.floor(premium.anonym.days), anonymDaysMax(hours)))
+        total = total + ((features.anonym and features.anonym.costPerDay or 0) * days)
+    end
+
     if type(premium) ~= 'table' then
-        return 0
+        return total
     end
 
     if premium.spotlight and type(premium.spotlight.days) == 'number' then
         local days = math.max(1, math.min(math.floor(premium.spotlight.days), maxDays))
         total = total + ((features.spotlight and features.spotlight.costPerDay or 0) * days)
-    end
-
-    if premium.anonym and type(premium.anonym.days) == 'number' then
-        local days = math.max(1, math.min(math.floor(premium.anonym.days), anonymDaysMax(hours)))
-        total = total + ((features.anonym and features.anonym.costPerDay or 0) * days)
     end
 
     if premium.liveticker and type(premium.liveticker.days) == 'number' then
@@ -83,7 +85,7 @@ function LiBridgeServerFeeds.CalculatePrice(data)
 
     local base = tonumber(duration.baseCost) or 0
     local text = #content * (Config.CharCost or 0)
-    local premium = premiumCost(data.premium, duration.hours)
+    local premium = premiumCost(data.premium, duration.hours, data.anonymous == true)
 
     return base + text + premium, nil
 end
@@ -145,36 +147,28 @@ local function requireAdSlot(identifier, src, requestId, onAllowed)
     end)
 end
 
+local function sqlAnonymUntil(hours)
+    hours = math.max(1, math.floor(tonumber(hours) or 24))
+    return ('DATE_ADD(NOW(), INTERVAL %d HOUR)'):format(hours)
+end
+
+local function resolveAnonymSql(hours, isAnonymous, premium)
+    if isAnonymous then
+        return sqlAnonymUntil(hours)
+    end
+    if type(premium) == 'table' and premium.anonym and premium.anonym.days then
+        return sqlIntervalDays(premium.anonym.days)
+    end
+    return 'NULL'
+end
+
 local function respondDelete(src, requestId, payload)
     TriggerClientEvent('ec_lifeinvader:client:deleteAdResult', src, requestId, payload)
 end
 
-RegisterNetEvent('ec_lifeinvader:server:postAd', function(requestId, data)
-    local src = source
-    data = data or {}
+local postAdContinue
 
-    if not LiBridge.Server.HasPermission(src, 'post') then
-        respondPost(src, requestId, { ok = false, error = 'no_permission' })
-        return
-    end
-
-    local identifier = LiBridge.Server.GetIdentifier(src)
-    if not identifier then
-        respondPost(src, requestId, { ok = false, error = 'no_identifier' })
-        return
-    end
-
-    LiBridgeServerBlacklist.IsBanned(identifier, function(banned)
-        if banned then
-            respondPost(src, requestId, { ok = false, error = 'blacklisted' })
-            return
-        end
-
-        postAdContinue(src, requestId, data, identifier)
-    end)
-end)
-
-local function postAdContinue(src, requestId, data, identifier)
+postAdContinue = function(src, requestId, data, identifier)
     local duration = findDuration(data.durationId)
     if not duration then
         respondPost(src, requestId, { ok = false, error = 'invalid_duration' })
@@ -203,19 +197,16 @@ local function postAdContinue(src, requestId, data, identifier)
     end
 
     local authorName = LiBridge.Server.GetCharacterName(src) or GetPlayerName(src) or 'Unbekannt'
-    local isAnonymous = data.anonymous == true or (type(data.premium) == 'table' and data.premium.anonym ~= nil)
+    local isAnonymous = data.anonymous == true
     local premiumJson = buildPremiumJson(data.premium, duration.hours)
 
     local spotlightSql = 'NULL'
-    local anonymSql = 'NULL'
+    local anonymSql = resolveAnonymSql(duration.hours, isAnonymous, data.premium)
     local tickerSql = 'NULL'
 
     if type(data.premium) == 'table' then
         if data.premium.spotlight and data.premium.spotlight.days then
             spotlightSql = sqlIntervalDays(data.premium.spotlight.days)
-        end
-        if data.premium.anonym and data.premium.anonym.days then
-            anonymSql = sqlIntervalDays(data.premium.anonym.days)
         end
         if data.premium.liveticker and data.premium.liveticker.days then
             tickerSql = sqlIntervalDays(data.premium.liveticker.days)
@@ -300,15 +291,13 @@ local function postAdContinue(src, requestId, data, identifier)
                 title = trim(data.title),
             }, src)
 
-            LiBridgeServerFeeds.GetActiveAds(identifier, function(ads)
-                LiBridgeServerFeeds.GetPlayerFeedHistory(identifier, function(history)
-                    respondPostWithSlots(identifier, src, requestId, {
-                        ok = true,
-                        balance = balance,
-                        ads = ads,
-                        history = history,
-                    })
-                end)
+            LiBridgeServerFeeds.RefetchPlayerFeed(identifier, function(ads, history)
+                respondPostWithSlots(identifier, src, requestId, {
+                    ok = true,
+                    balance = balance,
+                    ads = ads,
+                    history = history,
+                })
             end)
         end)
     end)
@@ -395,17 +384,15 @@ local function postAdContinue(src, requestId, data, identifier)
                             return
                         end
 
-                        LiBridgeServerFeeds.GetActiveAds(identifier, function(ads)
-                            LiBridgeServerFeeds.GetPlayerFeedHistory(identifier, function(history)
-                                respondPostWithSlots(identifier, src, requestId, {
-                                    ok = true,
-                                    balance = balance,
-                                    ads = ads,
-                                    history = history,
-                                    extensionCredit = credit,
-                                    charged = chargePrice,
-                                })
-                            end)
+                        LiBridgeServerFeeds.RefetchPlayerFeed(identifier, function(ads, history)
+                            respondPostWithSlots(identifier, src, requestId, {
+                                ok = true,
+                                balance = balance,
+                                ads = ads,
+                                history = history,
+                                extensionCredit = credit,
+                                charged = chargePrice,
+                            })
                         end)
                     end)
                 end)
@@ -459,6 +446,31 @@ local function postAdContinue(src, requestId, data, identifier)
     end)
 end
 
+RegisterNetEvent('ec_lifeinvader:server:postAd', function(requestId, data)
+    local src = source
+    data = data or {}
+
+    if not LiBridge.Server.HasPermission(src, 'post') then
+        respondPost(src, requestId, { ok = false, error = 'no_permission' })
+        return
+    end
+
+    local identifier = LiBridge.Server.GetIdentifier(src)
+    if not identifier then
+        respondPost(src, requestId, { ok = false, error = 'no_identifier' })
+        return
+    end
+
+    LiBridgeServerBlacklist.IsBanned(identifier, function(banned)
+        if banned then
+            respondPost(src, requestId, { ok = false, error = 'blacklisted' })
+            return
+        end
+
+        postAdContinue(src, requestId, data, identifier)
+    end)
+end)
+
 RegisterNetEvent('ec_lifeinvader:server:deleteAd', function(requestId, adId)
     local src = source
     adId = tonumber(adId)
@@ -497,15 +509,13 @@ RegisterNetEvent('ec_lifeinvader:server:deleteAd', function(requestId, adId)
                 { adId },
                 function()
                     LiBridgeServerAdSlots.GetPlayerAdSlotInfo(identifier, function(slotInfo)
-                        LiBridgeServerFeeds.GetActiveAds(identifier, function(ads)
-                            LiBridgeServerFeeds.GetPlayerFeedHistory(identifier, function(history)
-                                respondDelete(src, requestId, {
-                                    ok = true,
-                                    ads = ads,
-                                    history = history,
-                                    adSlots = slotInfo,
-                                })
-                            end)
+                        LiBridgeServerFeeds.RefetchPlayerFeed(identifier, function(ads, history)
+                            respondDelete(src, requestId, {
+                                ok = true,
+                                ads = ads,
+                                history = history,
+                                adSlots = slotInfo,
+                            })
                         end)
                     end)
                 end

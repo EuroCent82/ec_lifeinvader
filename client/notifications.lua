@@ -75,6 +75,11 @@ RegisterNetEvent('ec_lifeinvader:client:feedPostedNotify', function(payload)
         return
     end
 
+    local excludeSource = payload and payload._excludeSource
+    if excludeSource and tonumber(excludeSource) == GetPlayerServerId(PlayerId()) then
+        return
+    end
+
     local author = tostring((payload and payload.author) or 'Unbekannt')
     local title = tostring((payload and payload.title) or 'Neue Anzeige')
     local templates = cfg().templates or {}

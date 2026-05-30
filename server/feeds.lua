@@ -188,7 +188,15 @@ function LiBridgeServerFeeds.BuildInvoiceBreakdown(row)
         }
     end
 
-    if premium and premium.anonym and premium.anonym.days then
+    if (row.anonymous == 1 or row.anonymous == true) and not (premium and premium.anonym and premium.anonym.days) then
+        local days = math.max(1, math.ceil(hours / 24))
+        local perDay = (features.anonym and features.anonym.costPerDay) or 0
+        items[#items + 1] = {
+            label = 'Anonym posten',
+            detail = ('%d Tag(e) × $%s'):format(days, perDay),
+            amount = perDay * days,
+        }
+    elseif premium and premium.anonym and premium.anonym.days then
         local days = math.max(1, math.min(math.floor(premium.anonym.days), anonymDaysMaxForHours(hours)))
         local perDay = (features.anonym and features.anonym.costPerDay) or 0
         items[#items + 1] = {
@@ -465,13 +473,21 @@ function LiBridgeServerFeeds.GetPlayerMyAds(identifier, cb)
     )
 end
 
+function LiBridgeServerFeeds.GetPublicFeedLimit()
+    local cfg = Config.Feed or {}
+    return math.max(10, math.floor(tonumber(cfg.maxPublicAds) or 100))
+end
+
 function LiBridgeServerFeeds.GetActiveAds(viewerIdentifier, cb)
+    local limit = LiBridgeServerFeeds.GetPublicFeedLimit()
+
     LiBridge.MySQL.Query(
-        [[SELECT id, identifier, author_name, title, content, category, phone, anonymous,
+        ([[SELECT id, identifier, author_name, title, content, category, phone, anonymous,
                  premium, spotlight_until, duration_hours, price_paid, created_at, expires_at
           FROM lifeinvader_feeds
           WHERE status = 'active' AND expires_at > NOW()
-          ORDER BY (spotlight_until IS NOT NULL AND spotlight_until > NOW()) DESC, created_at DESC]],
+          ORDER BY (spotlight_until IS NOT NULL AND spotlight_until > NOW()) DESC, created_at DESC
+          LIMIT %d]]):format(limit),
         {},
         function(result)
             local ads = {}
@@ -553,22 +569,68 @@ function LiBridgeServerFeeds.GetTickerItems(cb)
 end
 
 function LiBridgeServerFeeds.LoadOpenData(viewerIdentifier, cb)
+    local data = {
+        categories = {},
+        ads = {},
+        ticker = {},
+        history = {},
+        myAds = {},
+    }
+    local pending = 5
+
+    local function finishPart()
+        pending = pending - 1
+        if pending <= 0 then
+            cb(data)
+        end
+    end
+
     LiBridgeServerFeeds.GetCategories(function(categories)
-        LiBridgeServerFeeds.GetActiveAds(viewerIdentifier, function(ads)
-            LiBridgeServerFeeds.GetTickerItems(function(ticker)
-                LiBridgeServerFeeds.GetPlayerFeedHistory(viewerIdentifier, function(history)
-                    LiBridgeServerFeeds.GetPlayerMyAds(viewerIdentifier, function(myAds)
-                        cb({
-                            categories = categories,
-                            ads = ads,
-                            ticker = ticker,
-                            history = history,
-                            myAds = myAds,
-                        })
-                    end)
-                end)
-            end)
-        end)
+        data.categories = categories
+        finishPart()
+    end)
+
+    LiBridgeServerFeeds.GetActiveAds(viewerIdentifier, function(ads)
+        data.ads = ads
+        finishPart()
+    end)
+
+    LiBridgeServerFeeds.GetTickerItems(function(ticker)
+        data.ticker = ticker
+        finishPart()
+    end)
+
+    LiBridgeServerFeeds.GetPlayerFeedHistory(viewerIdentifier, function(history)
+        data.history = history
+        finishPart()
+    end)
+
+    LiBridgeServerFeeds.GetPlayerMyAds(viewerIdentifier, function(myAds)
+        data.myAds = myAds
+        finishPart()
+    end)
+end
+
+function LiBridgeServerFeeds.RefetchPlayerFeed(identifier, cb)
+    local ads
+    local history
+    local pending = 2
+
+    local function finishPart()
+        pending = pending - 1
+        if pending <= 0 then
+            cb(ads, history)
+        end
+    end
+
+    LiBridgeServerFeeds.GetActiveAds(identifier, function(result)
+        ads = result
+        finishPart()
+    end)
+
+    LiBridgeServerFeeds.GetPlayerFeedHistory(identifier, function(result)
+        history = result
+        finishPart()
     end)
 end
 
@@ -591,10 +653,10 @@ function LiBridgeServerFeeds.BroadcastFeedNotification(payload, excludeSource)
         return
     end
 
-    for _, src in ipairs(GetPlayers()) do
-        local sourceId = tonumber(src)
-        if sourceId and (excludeSource == nil or sourceId ~= tonumber(excludeSource)) then
-            TriggerClientEvent('ec_lifeinvader:client:feedPostedNotify', sourceId, payload or {})
-        end
+    local message = payload or {}
+    if excludeSource ~= nil then
+        message._excludeSource = tonumber(excludeSource)
     end
+
+    TriggerClientEvent('ec_lifeinvader:client:feedPostedNotify', -1, message)
 end

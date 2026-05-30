@@ -171,7 +171,8 @@ local function resolveBlipSettings(location)
         sprite = tonumber(defaults.sprite) or 225,
         color = tonumber(defaults.color) or 1,
         scale = tonumber(defaults.scale) or 0.85,
-        shortRange = defaults.shortRange == true,
+        display = tonumber(defaults.display) or 3,
+        shortRange = defaults.shortRange ~= false,
         label = resolveBlipLabel(location),
     }
 end
@@ -198,10 +199,10 @@ local function spawnBlip(locationId, location)
     end
 
     SetBlipSprite(blip, blipData.sprite)
-    SetBlipDisplay(blip, 4)
+    SetBlipDisplay(blip, blipData.display)
     SetBlipScale(blip, blipData.scale)
     SetBlipColour(blip, blipData.color)
-    SetBlipAsShortRange(blip, blipData.shortRange == true)
+    SetBlipAsShortRange(blip, blipData.shortRange)
     safeSetBlipName(blip, blipLabel)
 
     spawnedBlips[locationId] = blip

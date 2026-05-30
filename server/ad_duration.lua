@@ -62,7 +62,24 @@ function LiBridgeServerAdDuration.GetMaxDays(identifier, cb)
     end)
 end
 
-function LiBridgeServerAdDuration.GetPlayerInfo(identifier, cb)
+function LiBridgeServerAdDuration.BuildPlayerInfoFromAccount(accountRow)
+    local bonus = math.max(0, math.floor(tonumber(accountRow and accountRow.ad_duration_bonus_days) or 0))
+    local maxDays = clampDays(LiBridgeServerAdDuration.GetDefaultMaxDays() + bonus)
+
+    return {
+        maxDays = maxDays,
+        bonusDays = bonus,
+        defaultMaxDays = LiBridgeServerAdDuration.GetDefaultMaxDays(),
+        maxHours = maxDays * 24,
+    }
+end
+
+function LiBridgeServerAdDuration.GetPlayerInfo(identifier, cb, accountRow)
+    if accountRow then
+        cb(LiBridgeServerAdDuration.BuildPlayerInfoFromAccount(accountRow))
+        return
+    end
+
     LiBridgeServerAdDuration.GetMaxDays(identifier, function(maxDays)
         LiBridgeServerAdDuration.EnsureAccountRow(identifier, function(ok, bonus)
             cb({

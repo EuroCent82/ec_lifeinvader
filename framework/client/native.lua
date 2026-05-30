@@ -55,7 +55,7 @@ CreateThread(function()
                 local dist = #(pos - vector3(x, y, z))
                 if dist <= maxDist then
                     nearZone = zone
-                    sleep = 0
+                    sleep = 100
                     break
                 end
             end

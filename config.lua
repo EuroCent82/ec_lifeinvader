@@ -296,7 +296,9 @@ Config.Blip = {
     sprite = 77,
     color = 1,
     scale = 0.85,
-    shortRange = false,
+    --- Nur große Karte (3), nicht Minimap; in der Nähe sichtbar (shortRange)
+    display = 3,
+    shortRange = true,
     label = 'LifeInvader',
     --- auto | native | none
     --- auto: deaktiviert Blip-Namen auf problematischen Builds (siehe disableNameForBuilds)
@@ -406,6 +408,16 @@ Config.OpenHours = {
 Config.Ticker = {
     enabled = true,
     maxActiveSlots = 5,
+}
+
+--------------------------------------------------------------------------------
+-- 10a) Öffentlicher Feed — Limit beim Tablet-Öffnen (Performance)
+--
+--     maxPublicAds = 100   → neueste aktive Anzeigen (Spotlight zuerst)
+--------------------------------------------------------------------------------
+
+Config.Feed = {
+    maxPublicAds = 100,
 }
 
 --------------------------------------------------------------------------------
@@ -565,10 +577,8 @@ Config.PremiumFeatures = {
     anonym = {
         label = 'Anonym posten',
         costPerDay = 150,
-        pricing = 'per_day',
-        minDays = 1,
-        maxHours = 48,
-        desc = 'Dein Name wird nicht im Feed angezeigt. Maximal 48 Stunden.',
+        pricing = 'per_ad',
+        desc = 'Dein Name wird für die gesamte Laufzeit der Anzeige nicht im Feed angezeigt (Ja/Nein).',
     },
     liveticker = {
         label = 'Live-Ticker',
