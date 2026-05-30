@@ -6,6 +6,8 @@ EcLifeInvader.World = EcLifeInvader.World or {}
 local spawnedPeds = {}
 local spawnedObjects = {}
 local spawnedBlips = {}
+local spawnedBlipCoords = {}
+local blipProximityThreadStarted = false
 
 local function worldDebugEnabled()
     if Config.Debug == true then
@@ -157,6 +159,46 @@ local function resolveBlipLabel(location)
     return 'LifeInvader'
 end
 
+local function getBlipMinimapDistance()
+    local defaults = Config.Blip or {}
+    return math.max(50, tonumber(defaults.minimapDistance) or 200)
+end
+
+local function updateBlipProximityDisplay()
+    local ped = PlayerPedId()
+    local pos = GetEntityCoords(ped)
+    local distance = getBlipMinimapDistance()
+    local farDisplay = tonumber((Config.Blip or {}).display) or 3
+    local nearDisplay = 2
+
+    for locationId, blip in pairs(spawnedBlips) do
+        if blip and DoesBlipExist(blip) then
+            local coords = spawnedBlipCoords[locationId]
+            if coords then
+                local dist = #(pos - vector3(coords.x, coords.y, coords.z))
+                SetBlipDisplay(blip, dist <= distance and nearDisplay or farDisplay)
+            end
+        end
+    end
+end
+
+local function ensureBlipProximityThread()
+    if blipProximityThreadStarted then
+        updateBlipProximityDisplay()
+        return
+    end
+
+    blipProximityThreadStarted = true
+
+    CreateThread(function()
+        while next(spawnedBlips) ~= nil do
+            updateBlipProximityDisplay()
+            Wait(500)
+        end
+        blipProximityThreadStarted = false
+    end)
+end
+
 local function resolveBlipSettings(location)
     local defaults = Config.Blip or {}
     local x, y, z = LiBridge.Vec4Parts(location.coords)
@@ -172,7 +214,7 @@ local function resolveBlipSettings(location)
         color = tonumber(defaults.color) or 1,
         scale = tonumber(defaults.scale) or 0.85,
         display = tonumber(defaults.display) or 3,
-        shortRange = defaults.shortRange ~= false,
+        shortRange = defaults.shortRange == true,
         label = resolveBlipLabel(location),
     }
 end
@@ -206,6 +248,8 @@ local function spawnBlip(locationId, location)
     safeSetBlipName(blip, blipLabel)
 
     spawnedBlips[locationId] = blip
+    spawnedBlipCoords[locationId] = { x = blipData.x, y = blipData.y, z = blipData.z }
+    ensureBlipProximityThread()
     debugPrint('Blip erstellt:', locationId, blipLabel, ('sprite=%s @ %.2f, %.2f, %.2f'):format(
         tostring(blipData.sprite),
         blipData.x,
@@ -441,6 +485,7 @@ function EcLifeInvader.World.Cleanup()
             RemoveBlip(blip)
         end
         spawnedBlips[locationId] = nil
+        spawnedBlipCoords[locationId] = nil
     end
 
     LiBridge.Client.ClearNativeZones()

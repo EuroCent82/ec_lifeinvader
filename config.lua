@@ -296,9 +296,11 @@ Config.Blip = {
     sprite = 77,
     color = 1,
     scale = 0.85,
-    --- Nur große Karte (3), nicht Minimap; in der Nähe sichtbar (shortRange)
+    --- 3 = nur große Karte (fern); Thread schaltet auf 2 (Minimap) in minimapDistance
     display = 3,
-    shortRange = true,
+    --- Meter: Blip erscheint auf der Minimap nur in dieser Nähe (große Karte immer)
+    minimapDistance = 200,
+    shortRange = false,
     label = 'LifeInvader',
     --- auto | native | none
     --- auto: deaktiviert Blip-Namen auf problematischen Builds (siehe disableNameForBuilds)
@@ -578,7 +580,7 @@ Config.PremiumFeatures = {
         label = 'Anonym posten',
         costPerDay = 150,
         pricing = 'per_ad',
-        desc = 'Dein Name wird für die gesamte Laufzeit der Anzeige nicht im Feed angezeigt (Ja/Nein).',
+        desc = 'Dein Name wird für die gesamte Laufzeit der Anzeige nicht im Feed angezeigt.',
     },
     liveticker = {
         label = 'Live-Ticker',
