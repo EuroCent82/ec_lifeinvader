@@ -198,6 +198,7 @@ Locales['en'] = {
         team_ads_ticker_blocked_hint = 'Blocked ads are not shown in the live ticker.',
         team_ads_status_changed = 'Status updated.',
         team_ads_edit_title = 'Edit ad',
+        team_ads_edit_meta_title = 'Ad info',
         team_refunds_intro = 'Refund to the poster’s LifeInvader balance (once per ad).',
         team_refunds_feed_id = 'Ad ID (LIV-… or number)',
         team_refunds_lookup = 'Load',

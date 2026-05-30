@@ -499,11 +499,29 @@ function LiBridgeServerFeeds.GetActiveAds(viewerIdentifier, cb)
     )
 end
 
-function LiBridgeServerFeeds.FormatTickerLine(title)
+function LiBridgeServerFeeds.FormatTickerItem(row)
+    local id = tonumber(row.id)
+    local title = tostring(row.title or ''):gsub('^%s+', ''):gsub('%s+$', '')
+    if not id or title == '' then
+        return nil
+    end
+
+    return {
+        livId = LiBridgeServerFeeds.FormatLivId(id),
+        title = title,
+    }
+end
+
+function LiBridgeServerFeeds.FormatTickerLine(title, livId)
     local text = tostring(title or ''):gsub('^%s+', ''):gsub('%s+$', '')
     if text == '' then
         return nil
     end
+
+    if livId and tostring(livId) ~= '' then
+        return ('+++ %s %s +++'):format(tostring(livId), text)
+    end
+
     return ('+++ %s +++'):format(text)
 end
 
@@ -546,7 +564,7 @@ function LiBridgeServerFeeds.GetTickerItems(cb)
     local limit = LiBridgeServerFeeds.GetTickerMaxSlots()
 
     LiBridge.MySQL.Query(
-        ([[SELECT title
+        ([[SELECT id, title
           FROM lifeinvader_feeds
           WHERE status = 'active'
             AND ticker_until IS NOT NULL
@@ -558,9 +576,9 @@ function LiBridgeServerFeeds.GetTickerItems(cb)
         function(result)
             local items = {}
             for _, row in ipairs(result or {}) do
-                local line = LiBridgeServerFeeds.FormatTickerLine(row.title)
-                if line then
-                    items[#items + 1] = line
+                local item = LiBridgeServerFeeds.FormatTickerItem(row)
+                if item then
+                    items[#items + 1] = item
                 end
             end
             cb(items)

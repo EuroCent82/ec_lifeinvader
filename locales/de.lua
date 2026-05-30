@@ -198,6 +198,7 @@ Locales['de'] = {
         team_ads_ticker_blocked_hint = 'Gesperrte Anzeigen erscheinen nicht im Live-Ticker.',
         team_ads_status_changed = 'Status aktualisiert.',
         team_ads_edit_title = 'Anzeige bearbeiten',
+        team_ads_edit_meta_title = 'Anzeigen-Info',
         team_refunds_intro = 'Erstattung auf das LifeInvader-Guthaben des Inserenten (pro Anzeige einmal).',
         team_refunds_feed_id = 'Anzeigen-ID (LIV-… oder Zahl)',
         team_refunds_lookup = 'Laden',

@@ -8,8 +8,9 @@ local function mapFeedTickerRow(row)
     return {
         id = tonumber(row.id),
         feedId = tonumber(row.id),
+        livId = LiBridgeServerFeeds.FormatLivId(row.id),
         title = title,
-        message = LiBridgeServerFeeds.FormatTickerLine(title),
+        message = LiBridgeServerFeeds.FormatTickerLine(title, LiBridgeServerFeeds.FormatLivId(row.id)),
         enabled = enabled,
         sortOrder = tonumber(row.ticker_sort_order) or 999999,
         createdAt = row.created_at,

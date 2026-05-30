@@ -80,6 +80,7 @@ end
 local function mapAdDetail(row)
     local premium = decodePremium(row.premium)
     local hours = tonumber(row.duration_hours) or 24
+    local history = LiBridgeServerFeeds.FormatHistoryRow(row)
 
     return {
         id = tonumber(row.id),
@@ -93,8 +94,11 @@ local function mapAdDetail(row)
         anonymous = row.anonymous == 1 or row.anonymous == true,
         authorName = row.author_name,
         identifier = row.identifier,
-        status = LiBridgeServerFeeds.FormatHistoryRow(row).status,
+        status = history.status,
         dbStatus = row.status,
+        createdAtLabel = history.createdAtLabel,
+        expiresAtLabel = history.expiresAtLabel,
+        pricePaid = history.pricePaid,
         premium = {
             spotlight = premium and premium.spotlight or nil,
             anonym = premium and premium.anonym or nil,
