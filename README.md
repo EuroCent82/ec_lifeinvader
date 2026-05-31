@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/EuroCent82/ec_lifeinvader/releases"><img src="https://img.shields.io/badge/Version-1.2.1-ff3b30?style=for-the-badge" alt="Version 1.2.1" /></a>
+  <a href="https://github.com/EuroCent82/ec_lifeinvader/releases"><img src="https://img.shields.io/badge/Version-1.2.0-ff3b30?style=for-the-badge" alt="Version 1.2.0" /></a>
   <a href="https://docs.fivem.net/natives/?_0x804B9F7B"><img src="https://img.shields.io/badge/GameBuild-3323-f27d20?style=for-the-badge" alt="Game Build 3323" /></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="MIT License" /></a>
 </p>
@@ -128,7 +128,7 @@ LifeInvader nutzt **Sprite 77** (rotes **„L“** auf der Karte). Der Name **�
 
 ---
 
-## Version 1.2.1
+## Version 1.2.0
 
 - **Nachrichtensystem:** Posteingang, Chat pro Anzeige, Team-Verlauf · ungelesen oben · Gelesen nach ~12 s im Chat
 - **Benachrichtigungen:** GTA Advanced Notification (`CHAR_LIFEINVADER`) für Inserent & Interessent · `/linotify` zum Testen
