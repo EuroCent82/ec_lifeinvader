@@ -81,3 +81,44 @@ function LiBridge.MySQL.Insert(query, params, cb)
 
     exports.oxmysql:insert(query, params, cb or function() end)
 end
+
+local function awaitCallback(run)
+    local done, result = false, nil
+    run(function(value)
+        result = value
+        done = true
+    end)
+    while not done do
+        Wait(0)
+    end
+    return result
+end
+
+function LiBridge.MySQL.QuerySync(query, params)
+    return awaitCallback(function(cb)
+        LiBridge.MySQL.Query(query, params or {}, function(rows)
+            cb(rows or {})
+        end)
+    end)
+end
+
+function LiBridge.MySQL.SingleSync(query, params)
+    local rows = LiBridge.MySQL.QuerySync(query, params)
+    return rows[1]
+end
+
+function LiBridge.MySQL.InsertSync(query, params)
+    return awaitCallback(function(cb)
+        LiBridge.MySQL.Insert(query, params or {}, function(id)
+            cb(id)
+        end)
+    end)
+end
+
+function LiBridge.MySQL.ExecuteSync(query, params)
+    return awaitCallback(function(cb)
+        LiBridge.MySQL.Execute(query, params or {}, function(affected)
+            cb(affected)
+        end)
+    end)
+end

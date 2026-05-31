@@ -82,10 +82,16 @@ Config.Adapters = {
 -- 2) Interaktion — wie Spieler LifeInvader öffnen
 --
 --    mode = 'target'  → ox_target / qb-target (je nach Config.Adapters.target)
---    mode = 'native'  → [E] in Nähe (nativeKey / nativeDistance)
+--    mode = 'native'  → [E] in Nähe (nativePrompt: 3d oder help)
 --    mode = 'item'    → nur über Config.Item (Inventar)
 --
---    WICHTIG: Config.Locations[i].interaction überschreibt mode pro Standort!
+--    nativePrompt = '3d'   → Text schwebt über NPC/Objekt
+--    nativePrompt = 'help' → klassische GTA-Hilfe oben links (grünes [E])
+--
+--    Pro Standort optional: Config.Locations[i].nativePrompt = 'help'
+--
+--    WICHTIG: Bei mode = 'native' gilt native für alle Standorte (außer type/item).
+--    Sonst überschreibt Config.Locations[i].interaction den globalen mode.
 --------------------------------------------------------------------------------
 
 Config.Interaction = {
@@ -93,6 +99,10 @@ Config.Interaction = {
     nativeKey = 38,           --- Control-ID (38 = E)
     nativeKeyLabel = 'E',     --- Anzeige in der Hilfe
     nativeDistance = 2.5,     --- Meter
+    nativePrompt = '3d',      --- 3d | help
+    nativeTextOffset = 0.35,  --- nur bei nativePrompt = '3d' (Meter über Kopf)
+    nativeWakeDistance = 20.0, --- ab dieser Entfernung kein Wait(0) mehr (~0.00 resmon)
+    nativeIdleWait = 500,     --- ms Schlaf wenn weit weg (Performance)
 }
 
 --------------------------------------------------------------------------------
@@ -120,51 +130,12 @@ Config.Phone = {
 }
 
 --------------------------------------------------------------------------------
--- 4b) Telefon-Aktionen aus dem Feed (Anrufen / Nachricht)
---
--- provider (ESX Legacy — freie Alternativen zu NPWD):
---   none         -> Buttons zeigen Hinweis, keine Phone-Integration
---   gcphone      -> Re-Ignited-Phone / gcPhone (klassisch, ESX Legacy)
---   z-phone      -> Z-Phone (modern, Open Source, braucht ox_lib)
---   lsfive-phone -> LSFive Phone (Auto-ESX, Server-Export für SMS)
---   roadphone    -> RoadPhone (Paid, ESX Legacy)
---   lb-phone     -> LB Phone (Paid, Server-Export)
---   custom       -> eigene Client-Events
---
--- Empfehlung ESX Legacy (kostenlos):
---   1. gcphone  → https://github.com/Re-Ignited-Development/Re-Ignited-Phone
---   2. z-phone  → https://github.com/alfaben12/z-phone
---   3. lsfive-phone → https://github.com/Krigsexe/lsfive-phone
+-- 4b) Nachrichten — Ingame-Chat zu Anzeigen (kein externes Phone-System)
 --------------------------------------------------------------------------------
 
-Config.PhoneActions = {
-    ---@type 'none'|'gcphone'|'z-phone'|'lsfive-phone'|'roadphone'|'lb-phone'|'custom'
-    provider = 'none',
-
-    defaultMessageTemplate = 'Hallo %s, ich schreibe dir wegen deiner Anzeige auf LifeInvader.',
-
-    providers = {
-        custom = {
-            resource = nil,
-            smsClientEvent = nil,
-            callClientEvent = nil,
-        },
-        gcphone = {
-            resource = 'gcphone',
-        },
-        ['z-phone'] = {
-            resource = 'z-phone',
-        },
-        ['lsfive-phone'] = {
-            resource = 'lsfive-phone',
-        },
-        roadphone = {
-            resource = 'roadphone',
-        },
-        ['lb-phone'] = {
-            resource = 'lb-phone',
-        },
-    },
+Config.Messages = {
+    enabled = true,
+    maxLength = 500,
 }
 
 --------------------------------------------------------------------------------
@@ -319,6 +290,7 @@ Config.Blip = {
 --    scenario     → optional, nur NPC (z. B. WORLD_HUMAN_STAND_MOBILE)
 --    spawnZOffset → optional Z-Korrektur (Standard -1.0; in MLO oft 0.0)
 --    interactDistance → Target-/Native-Reichweite
+--    nativePrompt   → optional: 3d | help (nur bei interaction = native)
 --    blipLabel    → optional: eigener Kartenname (sonst Config.Blip.label)
 --    blip = false → optional: kein Blip an diesem Standort
 --

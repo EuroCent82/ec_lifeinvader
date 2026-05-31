@@ -28,7 +28,8 @@ function LiBridge.Client.RegisterEntityInteraction(entity, location, label, onSe
 
     local mode = LiBridge.ResolveLocationInteraction(location)
     if mode == 'native' then
-        LiBridgeClientNative.RegisterZone(location, onSelect)
+        LiBridge.Client.RemoveEntityInteraction(entity)
+        LiBridgeClientNative.RegisterZone(location, onSelect, entity)
         return true
     end
 
@@ -37,6 +38,10 @@ function LiBridge.Client.RegisterEntityInteraction(entity, location, label, onSe
     end
 
     local target = LiBridge.Target()
+    if target == 'native' then
+        LiBridgeClientNative.RegisterZone(location, onSelect, entity)
+        return true
+    end
 
     if target == 'custom' and LiBridgeClientCustom.RegisterEntity(entity, location, label, onSelect) then
         return true
@@ -50,7 +55,7 @@ function LiBridge.Client.RegisterEntityInteraction(entity, location, label, onSe
         return true
     end
 
-    LiBridgeClientNative.RegisterZone(location, onSelect)
+    LiBridgeClientNative.RegisterZone(location, onSelect, entity)
     LiBridge.Debug('Target nicht verfügbar — Fallback native für', location.id or '?')
     return true
 end
@@ -70,8 +75,8 @@ function LiBridge.Client.RemoveEntityInteraction(entity)
     end
 end
 
-function LiBridge.Client.RegisterNativeZone(location, onSelect)
-    LiBridgeClientNative.RegisterZone(location, onSelect)
+function LiBridge.Client.RegisterNativeZone(location, onSelect, entity)
+    LiBridgeClientNative.RegisterZone(location, onSelect, entity)
 end
 
 function LiBridge.Client.ClearNativeZones()

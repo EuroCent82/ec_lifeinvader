@@ -1,5 +1,6 @@
 -- ec_lifeinvader — ESX Demo-Daten (Config.fake = true)
 -- Wird nur geladen wenn lifeinvader_categories leer ist.
+-- Für manuelles Test-Setup siehe: sql/seed_test_esx.sql
 
 INSERT INTO `lifeinvader_categories` (`slug`, `label`, `icon`, `sort_order`, `created_by`) VALUES
 ('verkauf', 'Verkauf', 'tags', 1, 'system'),
@@ -7,6 +8,13 @@ INSERT INTO `lifeinvader_categories` (`slug`, `label`, `icon`, `sort_order`, `cr
 ('jobs', 'Jobs', 'briefcase', 3, 'system'),
 ('events', 'Events', 'calendar-days', 4, 'system'),
 ('sonstiges', 'Sonstiges', 'ellipsis', 5, 'system');
+
+INSERT INTO `lifeinvader` (`identifier`, `balance`) VALUES
+('char1:fake_demo', 5000),
+('char1:fake_demo2', 4200),
+('char1:fake_demo3', 3800),
+('char1:fake_demo4', 6100),
+('char1:fake_demo5', 2900);
 
 INSERT INTO `lifeinvader_feeds` (
     `identifier`, `author_name`, `title`, `content`, `category`, `phone`,
@@ -29,7 +37,26 @@ INSERT INTO `lifeinvader_feeds` (
  'Vertretung vor Gericht. Melde dich bei Ken Rosenberg!',
  'dienstleistungen', '555-8831', 0, NULL, 168, 450, 'active',
  NULL, NULL, NULL, DATE_ADD(NOW(), INTERVAL 168 HOUR)),
-('char1:fake_demo5', 'Anonym', 'Verlorener Ehering gesucht',
- 'Finderlohn $5.000! Bitte per SMS melden.',
- 'sonstiges', '555-7281', 1, NULL, 24, 280, 'active',
+('char1:fake_demo5', 'Lena Incognito', 'Test Feed',
+ 'Ein einfacher Test Feed — anonym. Nachrichten über LifeInvader möglich.',
+ 'sonstiges', '0815', 1, '{"anonym":{"days":1}}', 24, 280, 'active',
  NULL, DATE_ADD(NOW(), INTERVAL 24 HOUR), NULL, DATE_ADD(NOW(), INTERVAL 24 HOUR));
+
+SET @fake_feed_lawyer := (SELECT id FROM lifeinvader_feeds WHERE identifier = 'char1:fake_demo4' ORDER BY id DESC LIMIT 1);
+SET @fake_feed_anon := (SELECT id FROM lifeinvader_feeds WHERE identifier = 'char1:fake_demo5' ORDER BY id DESC LIMIT 1);
+
+INSERT INTO `lifeinvader_conversations` (
+    `feed_id`, `ad_owner_identifier`, `guest_identifier`, `guest_name`, `updated_at`
+) VALUES
+(@fake_feed_lawyer, 'char1:fake_demo4', 'char1:fake_demo2', 'Franklin Clinton', DATE_SUB(NOW(), INTERVAL 15 MINUTE)),
+(@fake_feed_anon, 'char1:fake_demo5', 'char1:fake_demo', 'Bennys Motorworks', DATE_SUB(NOW(), INTERVAL 5 MINUTE));
+
+SET @fake_conv_lawyer := (SELECT id FROM lifeinvader_conversations WHERE feed_id = @fake_feed_lawyer AND guest_identifier = 'char1:fake_demo2' LIMIT 1);
+SET @fake_conv_anon := (SELECT id FROM lifeinvader_conversations WHERE feed_id = @fake_feed_anon AND guest_identifier = 'char1:fake_demo' LIMIT 1);
+
+INSERT INTO `lifeinvader_messages` (`conversation_id`, `sender_identifier`, `body`, `created_at`) VALUES
+(@fake_conv_lawyer, 'char1:fake_demo2', 'Hallo, ich brauche Beratung wegen eines Vertrags.', DATE_SUB(NOW(), INTERVAL 20 MINUTE)),
+(@fake_conv_lawyer, 'char1:fake_demo4', 'Gerne — schildern Sie den Fall kurz.', DATE_SUB(NOW(), INTERVAL 18 MINUTE)),
+(@fake_conv_lawyer, 'char1:fake_demo2', 'Es geht um einen Kaufvertrag für ein Fahrzeug.', DATE_SUB(NOW(), INTERVAL 15 MINUTE)),
+(@fake_conv_anon, 'char1:fake_demo', 'Hallo, ist das Angebot noch aktiv?', DATE_SUB(NOW(), INTERVAL 8 MINUTE)),
+(@fake_conv_anon, 'char1:fake_demo5', 'Ja — bitte hier weiter schreiben.', DATE_SUB(NOW(), INTERVAL 5 MINUTE));

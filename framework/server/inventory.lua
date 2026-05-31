@@ -50,6 +50,19 @@ function LiBridgeServerInventory.GetPhoneNumber(source)
     local cfg = Config.Phone or {}
     local phoneItems = cfg.items or { 'phone', 'black_phone', 'yellow_phone' }
 
+    local function normalizeNumber(value)
+        if value == nil then
+            return nil
+        end
+        local text = tostring(value):gsub('^%s+', ''):gsub('%s+$', '')
+        if text == '' or text == 'Keine Nummer' or text == '—' then
+            return nil
+        end
+        return text
+    end
+
+    local identifier = LiBridge.Server.GetIdentifier(source)
+
     local adapter = LiBridge.Inventory()
 
     if adapter == 'ox_inventory' and GetResourceState('ox_inventory') == 'started' then
@@ -59,12 +72,25 @@ function LiBridgeServerInventory.GetPhoneNumber(source)
             if type(items) == 'table' then
                 for _, slot in pairs(items) do
                     local meta = slot.metadata or slot.info
-                    local number = meta and (meta.phone or meta.number or meta.phoneNumber)
-                    if number and tostring(number) ~= '' then
-                        return tostring(number)
+                    local number = normalizeNumber(meta and (meta.phone or meta.number or meta.phoneNumber))
+                    if number then
+                        return number
                     end
                 end
             end
+        end
+    end
+
+    if LiBridge.Framework() == 'esx' and identifier then
+        local ok, row = pcall(function()
+            return LiBridge.MySQL.SingleSync(
+                'SELECT phone_number FROM users WHERE identifier = ? LIMIT 1',
+                { identifier }
+            )
+        end)
+        local number = normalizeNumber(ok and row and row.phone_number or nil)
+        if number then
+            return number
         end
     end
 
@@ -72,7 +98,7 @@ function LiBridgeServerInventory.GetPhoneNumber(source)
         for i = 1, #phoneItems do
             if LiBridgeServerInventory.HasItem(source, phoneItems[i], 1) then
                 if cfg.esxDefaultNumber then
-                    return tostring(cfg.esxDefaultNumber)
+                    return normalizeNumber(cfg.esxDefaultNumber)
                 end
                 break
             end
@@ -82,9 +108,9 @@ function LiBridgeServerInventory.GetPhoneNumber(source)
     if adapter == 'qb-inventory' or adapter == 'qb_inventory' then
         local player = LiBridgeServerQbcore.GetPlayer(source)
         if player and player.PlayerData and player.PlayerData.charinfo then
-            local phone = player.PlayerData.charinfo.phone
-            if phone and tostring(phone) ~= '' then
-                return tostring(phone)
+            local number = normalizeNumber(player.PlayerData.charinfo.phone)
+            if number then
+                return number
             end
         end
     end
@@ -93,9 +119,9 @@ function LiBridgeServerInventory.GetPhoneNumber(source)
     if fw == 'qbcore' or fw == 'qbox' then
         local player = fw == 'qbox' and LiBridgeServerQbox.GetPlayer(source) or LiBridgeServerQbcore.GetPlayer(source)
         if player and player.PlayerData and player.PlayerData.charinfo then
-            local phone = player.PlayerData.charinfo.phone
-            if phone and tostring(phone) ~= '' then
-                return tostring(phone)
+            local number = normalizeNumber(player.PlayerData.charinfo.phone)
+            if number then
+                return number
             end
         end
     end

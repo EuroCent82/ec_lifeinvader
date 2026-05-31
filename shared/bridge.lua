@@ -38,11 +38,21 @@ function LiBridge.Library()
 end
 
 function LiBridge.ResolveLocationInteraction(location)
+    local cfg = Config.Interaction or {}
+    local globalMode = string.lower(tostring(cfg.mode or 'target'))
+
+    if globalMode == 'native' then
+        if type(location) == 'table' and string.lower(tostring(location.interaction or '')) == 'item' then
+            return 'item'
+        end
+        return 'native'
+    end
+
     if type(location) == 'table' and location.interaction ~= nil then
         return string.lower(tostring(location.interaction))
     end
-    local cfg = Config.Interaction or {}
-    return string.lower(tostring(cfg.mode or 'target'))
+
+    return globalMode
 end
 
 function LiBridge.NormalizeLocationType(location)

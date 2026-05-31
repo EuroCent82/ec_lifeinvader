@@ -182,7 +182,7 @@ postAdContinue = function(src, requestId, data, identifier)
     end
 
     local phone = trim(data.phone)
-    if phone == '' or phone == 'Keine Nummer' then
+    if phone == '' or phone == 'Keine Nummer' or phone == '—' then
         phone = LiBridgeServerInventory.GetPhoneNumber(src) or ''
     end
     if phone == '' then

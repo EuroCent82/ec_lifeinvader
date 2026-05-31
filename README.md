@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/EuroCent82/ec_lifeinvader/releases"><img src="https://img.shields.io/badge/Version-1.1.32-ff3b30?style=for-the-badge" alt="Version 1.1.32" /></a>
+  <a href="https://github.com/EuroCent82/ec_lifeinvader/releases"><img src="https://img.shields.io/badge/Version-1.2.0-ff3b30?style=for-the-badge" alt="Version 1.2.0" /></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="MIT License" /></a>
 </p>
 
@@ -26,7 +26,8 @@
 | **Buchungshistorie** | Jede Anzeige mit **LIV-ID**, Status, Laufzeit — inkl. **Erneuern** abgelaufener Ads |
 | **LifeInvader-Konto** | Einzahlen vom Bar-/Bankkonto, Abbuchung beim Schalten |
 | **Meine Anzeigen** | Eigene aktive Inserate verwalten und löschen |
-| **Telefon-Bridge** | SMS/Anruf per Icon (gcphone, z-phone, lsfive-phone, roadphone, lb-phone) |
+| **Nachrichten** | Ingame-Chat pro Anzeige (WhatsApp-Style) · Team sieht Verlauf |
+| **Telefonnummer** | Kopieren in Zwischenablage · Auto-Erkennung beim Anzeigen-Schalten |
 
 Resource-Name: **`ec_lifeinvader`**
 

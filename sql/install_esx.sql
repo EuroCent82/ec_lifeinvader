@@ -1,5 +1,5 @@
 -- =============================================================================
--- ec_lifeinvader — ESX · Datenbank-Schema (6 Tabellen)
+-- ec_lifeinvader — ESX · Datenbank-Schema (8 Tabellen)
 -- Resource: ec_lifeinvader
 -- Framework: ESX (es_extended) · Config.Adapters.framework = 'esx'
 -- Import:   mysql -u user -p datenbank < install_esx.sql
@@ -131,6 +131,33 @@ CREATE TABLE IF NOT EXISTS `lifeinvader_blacklist` (
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_lifeinvader_blacklist_identifier` (`identifier`),
     KEY `idx_lifeinvader_blacklist_expires` (`expires_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `lifeinvader_conversations` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `feed_id` INT UNSIGNED NOT NULL,
+    `ad_owner_identifier` VARCHAR(128) NOT NULL,
+    `guest_identifier` VARCHAR(128) NOT NULL COMMENT 'Interessent (nicht Inserent)',
+    `guest_name` VARCHAR(128) NOT NULL DEFAULT 'Unbekannt',
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_lifeinvader_conv_feed_guest` (`feed_id`, `guest_identifier`),
+    KEY `idx_lifeinvader_conv_feed` (`feed_id`),
+    KEY `idx_lifeinvader_conv_owner` (`ad_owner_identifier`),
+    KEY `idx_lifeinvader_conv_guest` (`guest_identifier`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `lifeinvader_messages` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `conversation_id` INT UNSIGNED NOT NULL,
+    `sender_identifier` VARCHAR(128) NOT NULL,
+    `body` VARCHAR(500) NOT NULL,
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `idx_lifeinvader_msg_conv_created` (`conversation_id`, `created_at`),
+    CONSTRAINT `fk_lifeinvader_messages_conversation`
+        FOREIGN KEY (`conversation_id`) REFERENCES `lifeinvader_conversations` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;

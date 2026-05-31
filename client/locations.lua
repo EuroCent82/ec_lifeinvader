@@ -264,6 +264,16 @@ local function openLifeInvader(location)
 end
 
 local function registerInteraction(entity, location)
+    local mode = LiBridge.ResolveLocationInteraction(location)
+
+    if mode == 'native' then
+        LiBridge.Client.RemoveEntityInteraction(entity)
+        LiBridgeClientNative.RegisterZone(location, function()
+            openLifeInvader(location)
+        end, entity)
+        return
+    end
+
     LiBridge.Client.RegisterEntityInteraction(entity, location, location.label or 'LifeInvader öffnen', function()
         openLifeInvader(location)
     end)
@@ -414,9 +424,6 @@ local function collectWorldReport()
 
             if locationType ~= 'item' and locationType ~= 'object' then
                 local ok, ped, x, y, z, source = resolveNpcPresence(locationId, location)
-                if ok and ped and source == 'proximity' then
-                    registerInteraction(ped, location)
-                end
                 npcs[#npcs + 1] = {
                     id = locationId,
                     model = tostring(location.model or '?'),
@@ -461,6 +468,25 @@ function EcLifeInvader.World.ReportToServer(reason)
         npcs = npcs,
         objects = objects,
     })
+end
+
+function EcLifeInvader.World.GetInteractionEntity(locationId)
+    if locationId == nil then
+        return nil
+    end
+
+    local key = tostring(locationId)
+    local ped = spawnedPeds[key]
+    if ped and ped ~= 0 and DoesEntityExist(ped) then
+        return ped
+    end
+
+    local obj = spawnedObjects[key]
+    if obj and obj ~= 0 and DoesEntityExist(obj) then
+        return obj
+    end
+
+    return nil
 end
 
 function EcLifeInvader.World.Cleanup()

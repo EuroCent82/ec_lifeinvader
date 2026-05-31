@@ -4,7 +4,7 @@ EcLifeInvader = EcLifeInvader or {}
 
 local nuiOpen = false
 local pendingDeposits = {}
-local pendingContacts = {}
+local pendingMessages = {}
 local pendingPostAds = {}
 local pendingDeleteAds = {}
 local pendingTeam = {}
@@ -53,13 +53,13 @@ RegisterNetEvent('ec_lifeinvader:client:depositResult', function(requestId, resu
     cb(result or { ok = false, error = 'empty_response' })
 end)
 
-RegisterNetEvent('ec_lifeinvader:client:contactResult', function(requestId, result)
-    local cb = pendingContacts[requestId]
+RegisterNetEvent('ec_lifeinvader:client:messagesResult', function(requestId, result)
+    local cb = pendingMessages[requestId]
     if not cb then
         return
     end
 
-    pendingContacts[requestId] = nil
+    pendingMessages[requestId] = nil
     cb(result or { ok = false, error = 'empty_response' })
 end)
 
@@ -296,17 +296,76 @@ registerTeamCallback('teamIssueRefund', function(requestId, data)
     TriggerServerEvent('ec_lifeinvader:server:teamIssueRefund', requestId, data)
 end)
 
-RegisterNUICallback('contact', function(data, cb)
+RegisterNUICallback('messagesOpenChat', function(data, cb)
     local requestId = ('%s_%s'):format(GetGameTimer(), math.random(10000, 99999))
-    pendingContacts[requestId] = cb
-    TriggerServerEvent('ec_lifeinvader:server:contact', requestId, data or {})
-
+    pendingMessages[requestId] = cb
+    TriggerServerEvent('ec_lifeinvader:server:messagesOpenChat', requestId, tonumber(data and data.feedId))
     SetTimeout(15000, function()
-        if pendingContacts[requestId] then
-            pendingContacts[requestId]({ ok = false, error = 'timeout' })
-            pendingContacts[requestId] = nil
+        if pendingMessages[requestId] then
+            pendingMessages[requestId]({ ok = false, error = 'timeout' })
+            pendingMessages[requestId] = nil
         end
     end)
+end)
+
+RegisterNUICallback('messagesListInbox', function(_, cb)
+    local requestId = ('%s_%s'):format(GetGameTimer(), math.random(10000, 99999))
+    pendingMessages[requestId] = cb
+    TriggerServerEvent('ec_lifeinvader:server:messagesListInbox', requestId)
+    SetTimeout(15000, function()
+        if pendingMessages[requestId] then
+            pendingMessages[requestId]({ ok = false, error = 'timeout' })
+            pendingMessages[requestId] = nil
+        end
+    end)
+end)
+
+RegisterNUICallback('messagesList', function(data, cb)
+    local requestId = ('%s_%s'):format(GetGameTimer(), math.random(10000, 99999))
+    pendingMessages[requestId] = cb
+    TriggerServerEvent('ec_lifeinvader:server:messagesList', requestId, tonumber(data and data.conversationId))
+    SetTimeout(15000, function()
+        if pendingMessages[requestId] then
+            pendingMessages[requestId]({ ok = false, error = 'timeout' })
+            pendingMessages[requestId] = nil
+        end
+    end)
+end)
+
+RegisterNUICallback('messagesSend', function(data, cb)
+    local requestId = ('%s_%s'):format(GetGameTimer(), math.random(10000, 99999))
+    pendingMessages[requestId] = cb
+    TriggerServerEvent(
+        'ec_lifeinvader:server:messagesSend',
+        requestId,
+        tonumber(data and data.conversationId),
+        data and data.body
+    )
+    SetTimeout(15000, function()
+        if pendingMessages[requestId] then
+            pendingMessages[requestId]({ ok = false, error = 'timeout' })
+            pendingMessages[requestId] = nil
+        end
+    end)
+end)
+
+registerTeamCallback('teamListAdConversations', function(requestId, data)
+    TriggerServerEvent('ec_lifeinvader:server:teamListAdConversations', requestId, data.feedId)
+end)
+
+registerTeamCallback('teamListConversations', function(requestId, data)
+    TriggerServerEvent('ec_lifeinvader:server:teamListConversations', requestId, data or {})
+end)
+
+registerTeamCallback('teamListConversationMessages', function(requestId, data)
+    TriggerServerEvent('ec_lifeinvader:server:teamListConversationMessages', requestId, data.conversationId)
+end)
+
+RegisterNUICallback('copyText', function(data, cb)
+    if data and type(data.text) == 'string' and data.text ~= '' then
+        SendNUIMessage({ action = 'copyText', text = data.text })
+    end
+    cb({ ok = true })
 end)
 
 RegisterNUICallback('close', function(_, cb)

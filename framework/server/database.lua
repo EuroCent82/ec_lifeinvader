@@ -11,6 +11,8 @@ local REQUIRED_TABLES = {
     'lifeinvader_voucher_redemptions',
     'lifeinvader_refunds',
     'lifeinvader_blacklist',
+    'lifeinvader_conversations',
+    'lifeinvader_messages',
 }
 
 local INSTALL_BY_FRAMEWORK = {

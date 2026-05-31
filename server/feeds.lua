@@ -662,6 +662,7 @@ function LiBridgeServerFeeds.BuildUiConfig()
         categoryIcons = Config.CategoryIcons or {},
         deposit = Config.Deposit or { cash = true, bank = true },
         withdraw = Config.Withdraw or { cash = true, bank = false },
+        messagesEnabled = (Config.Messages or {}).enabled ~= false,
     }
 end
 

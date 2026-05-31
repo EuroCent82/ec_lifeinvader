@@ -8,7 +8,7 @@ local function buildOpenPayload(source, feedData)
     return {
         player = {
             name = LiBridge.Server.GetCharacterName(source) or GetPlayerName(source) or 'Unbekannt',
-            phone = phone or 'Keine Nummer',
+            phone = phone or '',
             money = 0,
             identifier = identifier,
         },
