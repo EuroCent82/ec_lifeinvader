@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/EuroCent82/ec_lifeinvader/releases"><img src="https://img.shields.io/badge/Version-1.2.1-ff3b30?style=for-the-badge" alt="Version 1.2.1" /></a>
+  <a href="https://github.com/EuroCent82/ec_lifeinvader/releases"><img src="https://img.shields.io/badge/Version-1.2.0-ff3b30?style=for-the-badge" alt="Version 1.2.0" /></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="MIT License" /></a>
 </p>
 
@@ -98,17 +98,12 @@ LifeInvader nutzt **Sprite 77** (rotes **„L“** auf der Karte). Der Name **�
 
 ---
 
-## Version 1.2.1
-
-- **README** überarbeitet (Nachrichtensystem, keine Telefon-Bridges)
-- **Screenshots** aktualisiert (Spieler- und Team-Ansicht)
-
 ## Version 1.2.0
 
 - **Nachrichtensystem:** Posteingang, Chat pro Anzeige, Team-Verlauf mit Namen und Identifiern
 - **Entfernt:** Externe Telefon-Bridges (gcphone, z-phone, roadphone, lb-phone)
 - **Fix:** Anonyme Anzeigen — Nachrichten-Button für alle; MySQL über LiBridge-Sync
-- **Angepasst:** Lesbare Zeitstempel (DD.MM.YYYY HH:MM)
+- **Angepasst:** Lesbare Zeitstempel (DD.MM.YYYY HH:MM), README, Screenshots (Spieler-/Team-Ansicht)
 
 ## Version 1.1.35
 
