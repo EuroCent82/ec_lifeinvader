@@ -6,6 +6,7 @@ local nuiOpen = false
 local pendingDeposits = {}
 local pendingWithdraws = {}
 local pendingMessages = {}
+local pendingVouchers = {}
 local pendingPostAds = {}
 local pendingDeleteAds = {}
 local pendingTeam = {}
@@ -137,6 +138,39 @@ RegisterNetEvent('ec_lifeinvader:client:messagesResult', function(requestId, res
 
     pendingMessages[requestId] = nil
     cb(result or { ok = false, error = 'empty_response' })
+end)
+
+RegisterNetEvent('ec_lifeinvader:client:voucherResult', function(requestId, result)
+    local cb = pendingVouchers[requestId]
+    if not cb then
+        return
+    end
+
+    pendingVouchers[requestId] = nil
+    cb(result or { ok = false, error = 'empty_response' })
+end)
+
+local function registerVoucherCallback(name, triggerFn)
+    RegisterNUICallback(name, function(data, cb)
+        local requestId = ('%s_%s'):format(GetGameTimer(), math.random(10000, 99999))
+        pendingVouchers[requestId] = cb
+        triggerFn(requestId, data or {})
+
+        SetTimeout(15000, function()
+            if pendingVouchers[requestId] then
+                pendingVouchers[requestId]({ ok = false, error = 'timeout' })
+                pendingVouchers[requestId] = nil
+            end
+        end)
+    end)
+end
+
+registerVoucherCallback('validateVoucher', function(requestId, data)
+    TriggerServerEvent('ec_lifeinvader:server:validateVoucher', requestId, data.code)
+end)
+
+registerVoucherCallback('redeemVoucher', function(requestId, data)
+    TriggerServerEvent('ec_lifeinvader:server:redeemVoucher', requestId, data.code)
 end)
 
 function EcLifeInvader.IsNuiOpen()
@@ -298,6 +332,19 @@ end)
 
 registerTeamCallback('teamCreateVoucher', function(requestId, data)
     TriggerServerEvent('ec_lifeinvader:server:teamCreateVoucher', requestId, data)
+end)
+
+registerTeamCallback('teamSetVoucherEnabled', function(requestId, data)
+    TriggerServerEvent(
+        'ec_lifeinvader:server:teamSetVoucherEnabled',
+        requestId,
+        tonumber(data.id),
+        data.enabled == true
+    )
+end)
+
+registerTeamCallback('teamDeleteVoucher', function(requestId, data)
+    TriggerServerEvent('ec_lifeinvader:server:teamDeleteVoucher', requestId, tonumber(data.id))
 end)
 
 registerTeamCallback('teamListCategories', function(requestId)

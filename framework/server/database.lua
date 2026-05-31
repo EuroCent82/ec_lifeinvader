@@ -71,6 +71,18 @@ local SCHEMA_PATCHES = {
         label = 'lifeinvader_conversations.guest_last_read_at',
         alter = 'ALTER TABLE lifeinvader_conversations ADD COLUMN guest_last_read_at TIMESTAMP NULL DEFAULT NULL AFTER ad_owner_last_read_at',
     },
+    {
+        table = 'lifeinvader_vouchers',
+        column = 'bound_identifier',
+        label = 'lifeinvader_vouchers.bound_identifier',
+        alter = 'ALTER TABLE lifeinvader_vouchers ADD COLUMN bound_identifier VARCHAR(128) NULL DEFAULT NULL AFTER enabled',
+    },
+    {
+        table = 'lifeinvader_vouchers',
+        column = 'internal_note',
+        label = 'lifeinvader_vouchers.internal_note',
+        alter = 'ALTER TABLE lifeinvader_vouchers ADD COLUMN internal_note VARCHAR(512) NULL DEFAULT NULL AFTER bound_identifier',
+    },
 }
 
 local function fakeEnabled()

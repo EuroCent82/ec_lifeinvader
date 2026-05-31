@@ -350,7 +350,7 @@ RegisterNetEvent('ec_lifeinvader:server:teamSaveAdFull', function(requestId, adI
     local category = trim(data.category)
     local phone = trim(data.phone)
 
-    if title == '' or content == '' or category == '' or phone == '' then
+    if title == '' or content == '' or category == '' then
         LiBridgeServerTeam.Respond(src, requestId, { ok = false, error = 'invalid_input' })
         return
     end

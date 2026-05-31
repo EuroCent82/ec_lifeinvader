@@ -60,6 +60,7 @@ server_scripts {
     'server/team_players.lua',
     'server/team_slots.lua',
     'server/team_duration.lua',
+    'server/vouchers.lua',
     'server/team_vouchers.lua',
     'server/team_categories.lua',
     'server/team_ticker.lua',

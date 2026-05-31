@@ -88,6 +88,8 @@ CREATE TABLE IF NOT EXISTS `lifeinvader_vouchers` (
     `max_uses` INT UNSIGNED NULL DEFAULT NULL,
     `uses_count` INT UNSIGNED NOT NULL DEFAULT 0,
     `enabled` TINYINT(1) NOT NULL DEFAULT 1,
+    `bound_identifier` VARCHAR(128) NULL DEFAULT NULL COMMENT 'NULL = frei nutzbar, sonst nur dieser Spieler',
+    `internal_note` VARCHAR(512) NULL DEFAULT NULL COMMENT 'Interner Team-Hinweis',
     `created_by` VARCHAR(128) NOT NULL COMMENT 'ESX xPlayer.identifier (Team)',
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
