@@ -42,7 +42,7 @@ local function mapVoucherRow(row)
         maxUses = row.max_uses and tonumber(row.max_uses) or nil,
         usesCount = tonumber(row.uses_count) or 0,
         enabled = row.enabled == 1 or row.enabled == true,
-        boundIdentifier = row.bound_identifier,
+        perPlayerOnce = row.per_player_once == 1 or row.per_player_once == true,
         internalNote = row.internal_note,
         createdBy = row.created_by,
         createdAt = row.created_at,
@@ -50,7 +50,7 @@ local function mapVoucherRow(row)
 end
 
 local VOUCHER_SELECT = [[SELECT id, code, value, expires_at, max_uses, uses_count, enabled,
-    bound_identifier, internal_note, created_by, created_at
+    per_player_once, internal_note, created_by, created_at
     FROM lifeinvader_vouchers]]
 
 RegisterNetEvent('ec_lifeinvader:server:teamListVouchers', function(requestId)
@@ -111,16 +111,7 @@ RegisterNetEvent('ec_lifeinvader:server:teamCreateVoucher', function(requestId, 
         expiresAt = nil
     end
 
-    local playerBound = data.playerBound == true
-    local boundIdentifier = playerBound and trim(data.boundIdentifier) or nil
-    if playerBound and boundIdentifier == '' then
-        LiBridgeServerTeam.Respond(src, requestId, { ok = false, error = 'invalid_identifier' })
-        return
-    end
-
-    if not playerBound then
-        boundIdentifier = nil
-    end
+    local perPlayerOnce = data.perPlayerOnce == true
 
     local internalNote = trim(data.internalNote)
     if internalNote == '' then
@@ -132,9 +123,9 @@ RegisterNetEvent('ec_lifeinvader:server:teamCreateVoucher', function(requestId, 
 
     LiBridge.MySQL.Insert(
         [[INSERT INTO lifeinvader_vouchers
-          (code, value, expires_at, max_uses, enabled, bound_identifier, internal_note, created_by)
+          (code, value, expires_at, max_uses, enabled, per_player_once, internal_note, created_by)
           VALUES (?, ?, ?, ?, 1, ?, ?, ?)]],
-        { code, value, expiresAt, maxUses, boundIdentifier, internalNote, createdBy },
+        { code, value, expiresAt, maxUses, perPlayerOnce and 1 or 0, internalNote, createdBy },
         function(insertId)
             if not insertId then
                 LiBridgeServerTeam.Respond(src, requestId, { ok = false, error = 'db_failed' })
@@ -151,7 +142,7 @@ RegisterNetEvent('ec_lifeinvader:server:teamCreateVoucher', function(requestId, 
                     maxUses = maxUses,
                     usesCount = 0,
                     enabled = true,
-                    boundIdentifier = boundIdentifier,
+                    perPlayerOnce = perPlayerOnce,
                     internalNote = internalNote,
                     createdBy = createdBy,
                 },

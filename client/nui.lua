@@ -169,10 +169,6 @@ registerVoucherCallback('validateVoucher', function(requestId, data)
     TriggerServerEvent('ec_lifeinvader:server:validateVoucher', requestId, data.code)
 end)
 
-registerVoucherCallback('redeemVoucher', function(requestId, data)
-    TriggerServerEvent('ec_lifeinvader:server:redeemVoucher', requestId, data.code)
-end)
-
 function EcLifeInvader.IsNuiOpen()
     return nuiOpen
 end

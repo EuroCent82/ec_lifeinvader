@@ -669,6 +669,7 @@ function LiBridgeServerFeeds.RefetchPlayerFeed(identifier, cb)
 end
 
 function LiBridgeServerFeeds.BuildUiConfig()
+    local withdrawCfg = Config.Withdraw
     return {
         durations = Config.Durations or {},
         charCost = Config.CharCost or 2,
@@ -677,7 +678,8 @@ function LiBridgeServerFeeds.BuildUiConfig()
         premiumFeatures = Config.PremiumFeatures or {},
         categoryIcons = Config.CategoryIcons or {},
         deposit = Config.Deposit or { cash = true, bank = true },
-        withdraw = Config.Withdraw or { cash = true, bank = false },
+        withdrawEnabled = withdrawCfg ~= nil,
+        withdraw = withdrawCfg,
         messagesEnabled = (Config.Messages or {}).enabled ~= false,
         messagesMarkReadDelayMs = tonumber((Config.Messages or {}).markReadDelayMs) or 12000,
     }

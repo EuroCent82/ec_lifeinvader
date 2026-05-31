@@ -79,9 +79,15 @@ local SCHEMA_PATCHES = {
     },
     {
         table = 'lifeinvader_vouchers',
+        column = 'per_player_once',
+        label = 'lifeinvader_vouchers.per_player_once',
+        alter = 'ALTER TABLE lifeinvader_vouchers ADD COLUMN per_player_once TINYINT(1) NOT NULL DEFAULT 0 AFTER enabled',
+    },
+    {
+        table = 'lifeinvader_vouchers',
         column = 'internal_note',
         label = 'lifeinvader_vouchers.internal_note',
-        alter = 'ALTER TABLE lifeinvader_vouchers ADD COLUMN internal_note VARCHAR(512) NULL DEFAULT NULL AFTER bound_identifier',
+        alter = 'ALTER TABLE lifeinvader_vouchers ADD COLUMN internal_note VARCHAR(512) NULL DEFAULT NULL AFTER per_player_once',
     },
 }
 

@@ -85,7 +85,7 @@ CREATE TABLE IF NOT EXISTS `lifeinvader_vouchers` (
     `max_uses` INT UNSIGNED NULL DEFAULT NULL,
     `uses_count` INT UNSIGNED NOT NULL DEFAULT 0,
     `enabled` TINYINT(1) NOT NULL DEFAULT 1,
-    `bound_identifier` VARCHAR(128) NULL DEFAULT NULL COMMENT 'NULL = frei nutzbar, sonst nur dieser Spieler',
+    `per_player_once` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '1 = jeder Spieler max. einmal',
     `internal_note` VARCHAR(512) NULL DEFAULT NULL COMMENT 'Interner Team-Hinweis',
     `created_by` VARCHAR(128) NOT NULL COMMENT 'QBox citizenid (Team)',
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

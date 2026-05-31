@@ -247,6 +247,25 @@ postAdContinue = function(src, requestId, data, identifier)
         end, excludeFeedId)
     end
 
+    local function applyVoucherThenCharge(chargePrice, continueFn)
+        chargePrice = math.max(0, math.floor(tonumber(chargePrice) or 0))
+
+        local voucherCode = LiBridgeServerVouchers.NormalizeCode(data.voucherCode or '')
+        if voucherCode == '' or not LiBridgeServerVouchers or not LiBridgeServerVouchers.Enabled() then
+            continueFn(chargePrice)
+            return
+        end
+
+        LiBridgeServerVouchers.ConsumeForAd(identifier, voucherCode, chargePrice, function(ok, err, discount)
+            if not ok then
+                respondPost(src, requestId, { ok = false, error = err or 'invalid_voucher' })
+                return
+            end
+
+            continueFn(math.max(0, chargePrice - (discount or 0)))
+        end)
+    end
+
     local function finishPost(chargePrice)
         chargePrice = math.max(0, math.floor(tonumber(chargePrice) or 0))
 
@@ -334,74 +353,76 @@ postAdContinue = function(src, requestId, data, identifier)
                 local credit = LiBridgeServerFeeds.CalculateRemainingCredit(row)
                 local chargePrice = math.max(0, grossPrice - credit)
 
-                local clientPrice = math.floor(tonumber(data.price) or -1)
-                if clientPrice >= 0 and math.abs(clientPrice - chargePrice) > 1 then
-                    respondPost(src, requestId, { ok = false, error = 'price_mismatch' })
-                    return
-                end
-
                 ensureTickerCapacity(extendFromId, function()
-                local tickerEnabledClause = wantsTicker and ', ticker_enabled = 1' or ''
-                LiBridgeServerAccount.RemoveBalance(identifier, chargePrice, function(paid, balance, payErr)
-                    if not paid then
-                        respondPost(src, requestId, {
-                            ok = false,
-                            error = payErr == 'insufficient_balance' and 'insufficient_balance' or 'payment_failed',
-                            balance = balance,
-                        })
-                        return
-                    end
-
-                    local updateQuery = ([[
-                        UPDATE lifeinvader_feeds SET
-                            author_name = ?,
-                            title = ?,
-                            content = ?,
-                            category = ?,
-                            phone = ?,
-                            anonymous = ?,
-                            premium = ?,
-                            duration_hours = duration_hours + ?,
-                            price_paid = price_paid + ?,
-                            expires_at = DATE_ADD(expires_at, INTERVAL %d HOUR),
-                            spotlight_until = %s,
-                            anonym_until = %s,
-                            ticker_until = %s%s
-                        WHERE id = ? AND identifier = ? AND status = 'active'
-                    ]]):format(duration.hours, spotlightSql, anonymSql, tickerSql, tickerEnabledClause)
-
-                    LiBridge.MySQL.Execute(updateQuery, {
-                        authorName,
-                        trim(data.title),
-                        trim(data.content),
-                        trim(data.category),
-                        phone,
-                        isAnonymous and 1 or 0,
-                        premiumJson,
-                        duration.hours,
-                        chargePrice,
-                        extendFromId,
-                        identifier,
-                    }, function(affected)
-                        local rowsAffected = tonumber(affected) or 0
-                        if rowsAffected < 1 then
-                            LiBridgeServerAccount.AddBalance(identifier, chargePrice, function() end)
-                            respondPost(src, requestId, { ok = false, error = 'db_failed' })
+                    local tickerEnabledClause = wantsTicker and ', ticker_enabled = 1' or ''
+                    applyVoucherThenCharge(chargePrice, function(finalPrice)
+                        local clientPrice = math.floor(tonumber(data.price) or -1)
+                        if clientPrice >= 0 and math.abs(clientPrice - finalPrice) > 1 then
+                            respondPost(src, requestId, { ok = false, error = 'price_mismatch' })
                             return
                         end
 
-                        LiBridgeServerFeeds.RefetchPlayerFeed(identifier, function(ads, history)
-                            respondPostWithSlots(identifier, src, requestId, {
-                                ok = true,
-                                balance = balance,
-                                ads = ads,
-                                history = history,
-                                extensionCredit = credit,
-                                charged = chargePrice,
-                            })
+                        LiBridgeServerAccount.RemoveBalance(identifier, finalPrice, function(paid, balance, payErr)
+                            if not paid then
+                                respondPost(src, requestId, {
+                                    ok = false,
+                                    error = payErr == 'insufficient_balance' and 'insufficient_balance' or 'payment_failed',
+                                    balance = balance,
+                                })
+                                return
+                            end
+
+                            local updateQuery = ([[
+                                UPDATE lifeinvader_feeds SET
+                                    author_name = ?,
+                                    title = ?,
+                                    content = ?,
+                                    category = ?,
+                                    phone = ?,
+                                    anonymous = ?,
+                                    premium = ?,
+                                    duration_hours = duration_hours + ?,
+                                    price_paid = price_paid + ?,
+                                    expires_at = DATE_ADD(expires_at, INTERVAL %d HOUR),
+                                    spotlight_until = %s,
+                                    anonym_until = %s,
+                                    ticker_until = %s%s
+                                WHERE id = ? AND identifier = ? AND status = 'active'
+                            ]]):format(duration.hours, spotlightSql, anonymSql, tickerSql, tickerEnabledClause)
+
+                            LiBridge.MySQL.Execute(updateQuery, {
+                                authorName,
+                                trim(data.title),
+                                trim(data.content),
+                                trim(data.category),
+                                phone,
+                                isAnonymous and 1 or 0,
+                                premiumJson,
+                                duration.hours,
+                                finalPrice,
+                                extendFromId,
+                                identifier,
+                            }, function(affected)
+                                local rowsAffected = tonumber(affected) or 0
+                                if rowsAffected < 1 then
+                                    LiBridgeServerAccount.AddBalance(identifier, finalPrice, function() end)
+                                    respondPost(src, requestId, { ok = false, error = 'db_failed' })
+                                    return
+                                end
+
+                                LiBridgeServerFeeds.RefetchPlayerFeed(identifier, function(ads, history)
+                                    respondPostWithSlots(identifier, src, requestId, {
+                                        ok = true,
+                                        balance = balance,
+                                        ads = ads,
+                                        history = history,
+                                        extensionCredit = credit,
+                                        charged = finalPrice,
+                                    })
+                                end)
+                            end)
                         end)
                     end)
-                end)
                 end)
                 end)
             end
@@ -429,7 +450,7 @@ postAdContinue = function(src, requestId, data, identifier)
 
                     requireAdSlot(identifier, src, requestId, function()
                         ensureTickerCapacity(nil, function()
-                            finishPost(grossPrice)
+                            applyVoucherThenCharge(grossPrice, finishPost)
                         end)
                     end)
                 end)
@@ -446,7 +467,7 @@ postAdContinue = function(src, requestId, data, identifier)
 
         requireAdSlot(identifier, src, requestId, function()
             ensureTickerCapacity(nil, function()
-                finishPost(grossPrice)
+                applyVoucherThenCharge(grossPrice, finishPost)
             end)
         end)
     end)
