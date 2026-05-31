@@ -207,3 +207,111 @@ RegisterNetEvent('ec_lifeinvader:server:deposit', function(requestId, amount, pa
         TriggerClientEvent('ec_lifeinvader:client:depositResult', src, requestId, result)
     end)
 end)
+
+function LiBridgeServerAccount.Withdraw(source, amount, payTo, cb)
+    amount = math.floor(tonumber(amount) or 0)
+    if amount <= 0 then
+        local response = { ok = false, error = 'invalid_amount' }
+        if cb then
+            cb(response)
+        end
+        return response
+    end
+
+    local withdrawCfg = Config.Withdraw or {}
+    payTo = tostring(payTo or 'cash')
+
+    if payTo == 'cash' and withdrawCfg.cash == false then
+        local response = { ok = false, error = 'cash_disabled' }
+        if cb then
+            cb(response)
+        end
+        return response
+    end
+    if payTo == 'bank' and withdrawCfg.bank == false then
+        local response = { ok = false, error = 'bank_disabled' }
+        if cb then
+            cb(response)
+        end
+        return response
+    end
+
+    local identifier = LiBridge.Server.GetIdentifier(source)
+    if not identifier then
+        local response = { ok = false, error = 'no_identifier' }
+        if cb then
+            cb(response)
+        end
+        return response
+    end
+
+    if cb then
+        LiBridgeServerAccount.RemoveBalance(identifier, amount, function(ok, balance, err)
+            if not ok then
+                cb({
+                    ok = false,
+                    error = err == 'insufficient_balance' and 'insufficient_balance' or 'db_failed',
+                    balance = balance,
+                })
+                return
+            end
+
+            if not LiBridgeServerFinance.AddMoney(source, payTo, amount) then
+                LiBridgeServerAccount.AddBalance(identifier, amount, function(restored)
+                    cb({
+                        ok = false,
+                        error = 'payment_failed',
+                        balance = restored and balance or balance,
+                    })
+                end)
+                return
+            end
+
+            cb({ ok = true, balance = balance })
+        end)
+        return
+    end
+
+    local done = false
+    local response = { ok = false, error = 'timeout' }
+
+    LiBridgeServerAccount.RemoveBalance(identifier, amount, function(ok, balance, err)
+        if not ok then
+            response = {
+                ok = false,
+                error = err == 'insufficient_balance' and 'insufficient_balance' or 'db_failed',
+                balance = balance,
+            }
+            done = true
+            return
+        end
+
+        if not LiBridgeServerFinance.AddMoney(source, payTo, amount) then
+            LiBridgeServerAccount.AddBalance(identifier, amount, function()
+                response = { ok = false, error = 'payment_failed', balance = balance }
+                done = true
+            end)
+            return
+        end
+
+        response = { ok = true, balance = balance }
+        done = true
+    end)
+
+    while not done do
+        Wait(50)
+    end
+
+    return response
+end
+
+LiBridge.Server.RegisterCallback('ec_lifeinvader:withdraw', function(source, amount, payTo)
+    return LiBridgeServerAccount.Withdraw(source, amount, payTo)
+end)
+
+RegisterNetEvent('ec_lifeinvader:server:withdraw', function(requestId, amount, payTo)
+    local src = source
+    LiBridgeServerAccount.Withdraw(src, amount, payTo, function(result)
+        TriggerClientEvent('ec_lifeinvader:client:withdrawResult', src, requestId, result)
+    end)
+end)

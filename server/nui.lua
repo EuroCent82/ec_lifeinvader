@@ -58,11 +58,12 @@ local function openPlayerNui(src)
     local feedData
     local accountRow
     local activeCount
-    local pending = 3
+    local unreadMessages
+    local pending = 4
 
     local function tryFinish()
         pending = pending - 1
-        if pending > 0 or not feedData or not accountRow or activeCount == nil then
+        if pending > 0 or not feedData or not accountRow or activeCount == nil or unreadMessages == nil then
             return
         end
 
@@ -73,6 +74,7 @@ local function openPlayerNui(src)
         payload.adDurationPolicy = LiBridgeServerAdDuration.BuildPolicyForUi()
         payload.adDuration = LiBridgeServerAdDuration.BuildPlayerInfoFromAccount(accountRow)
         payload.myAds = feedData.myAds or {}
+        payload.messagesUnreadCount = unreadMessages
         TriggerClientEvent('ec_lifeinvader:client:openNui', src, payload)
     end
 
@@ -88,6 +90,11 @@ local function openPlayerNui(src)
 
     LiBridgeServerAdSlots.GetActiveAdCount(identifier, function(count)
         activeCount = count
+        tryFinish()
+    end)
+
+    LiBridgeServerMessages.GetUnreadCount(identifier, function(count)
+        unreadMessages = count
         tryFinish()
     end)
 end

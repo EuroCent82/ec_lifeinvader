@@ -136,6 +136,8 @@ CREATE TABLE IF NOT EXISTS `lifeinvader_conversations` (
     `ad_owner_identifier` VARCHAR(128) NOT NULL,
     `guest_identifier` VARCHAR(128) NOT NULL COMMENT 'Interessent (nicht Inserent)',
     `guest_name` VARCHAR(128) NOT NULL DEFAULT 'Unbekannt',
+    `ad_owner_last_read_at` TIMESTAMP NULL DEFAULT NULL,
+    `guest_last_read_at` TIMESTAMP NULL DEFAULT NULL,
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),

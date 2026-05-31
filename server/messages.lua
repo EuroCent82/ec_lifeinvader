@@ -128,6 +128,75 @@ local function participantAllowed(conversation, identifier)
         or identifier == conversation.guest_identifier
 end
 
+local UNREAD_COUNT_SELECT = [[(SELECT COUNT(*) FROM lifeinvader_messages um
+    WHERE um.conversation_id = c.id
+      AND um.sender_identifier <> ?
+      AND um.created_at > COALESCE(
+        IF(c.ad_owner_identifier = ?, c.ad_owner_last_read_at, c.guest_last_read_at),
+        '1970-01-01 00:00:00')) AS unread_count]]
+
+local function markConversationRead(conversation, identifier)
+    if not conversation or not identifier then
+        return
+    end
+
+    if conversation.ad_owner_identifier == identifier then
+        LiBridge.MySQL.ExecuteSync(
+            'UPDATE lifeinvader_conversations SET ad_owner_last_read_at = CURRENT_TIMESTAMP WHERE id = ?',
+            { tonumber(conversation.id) }
+        )
+        return
+    end
+
+    if conversation.guest_identifier == identifier then
+        LiBridge.MySQL.ExecuteSync(
+            'UPDATE lifeinvader_conversations SET guest_last_read_at = CURRENT_TIMESTAMP WHERE id = ?',
+            { tonumber(conversation.id) }
+        )
+    end
+end
+
+function LiBridgeServerMessages.GetUnreadCount(identifier, cb)
+    if messagesCfg().enabled == false or not identifier then
+        if cb then
+            cb(0)
+        end
+        return 0
+    end
+
+    if cb then
+        LiBridge.MySQL.Query(
+            [[SELECT COUNT(*) AS count
+              FROM lifeinvader_messages um
+              INNER JOIN lifeinvader_conversations c ON c.id = um.conversation_id
+              WHERE (c.ad_owner_identifier = ? OR c.guest_identifier = ?)
+                AND um.sender_identifier <> ?
+                AND um.created_at > COALESCE(
+                  IF(c.ad_owner_identifier = ?, c.ad_owner_last_read_at, c.guest_last_read_at),
+                  '1970-01-01 00:00:00')]],
+            { identifier, identifier, identifier, identifier },
+            function(result)
+                cb(tonumber(result and result[1] and result[1].count) or 0)
+            end
+        )
+        return
+    end
+
+    local row = LiBridge.MySQL.SingleSync(
+        [[SELECT COUNT(*) AS count
+          FROM lifeinvader_messages um
+          INNER JOIN lifeinvader_conversations c ON c.id = um.conversation_id
+          WHERE (c.ad_owner_identifier = ? OR c.guest_identifier = ?)
+            AND um.sender_identifier <> ?
+            AND um.created_at > COALESCE(
+              IF(c.ad_owner_identifier = ?, c.ad_owner_last_read_at, c.guest_last_read_at),
+              '1970-01-01 00:00:00')]],
+        { identifier, identifier, identifier, identifier }
+    )
+
+    return tonumber(row and row.count) or 0
+end
+
 local function mapConversationSummary(row, viewerIdentifier)
     local isOwner = row.ad_owner_identifier == viewerIdentifier
     local displayAuthor = publicAuthorName({
@@ -149,6 +218,7 @@ local function mapConversationSummary(row, viewerIdentifier)
         updatedAt = formatTimestamp(row.updated_at),
         lastMessage = row.last_body,
         lastMessageAt = formatTimestamp(row.last_message_at),
+        unreadCount = tonumber(row.unread_count) or 0,
     }
 end
 
@@ -252,18 +322,19 @@ function LiBridgeServerMessages.ListInbox(src, requestId)
     end
 
     local rows = LiBridge.MySQL.QuerySync(
-        [[SELECT c.id, c.feed_id, c.ad_owner_identifier, c.guest_identifier, c.guest_name,
+        ([[SELECT c.id, c.feed_id, c.ad_owner_identifier, c.guest_identifier, c.guest_name,
                  c.updated_at, f.title AS feed_title, f.author_name, f.phone, f.anonymous, f.status AS feed_status,
                  (SELECT m.body FROM lifeinvader_messages m
                   WHERE m.conversation_id = c.id ORDER BY m.id DESC LIMIT 1) AS last_body,
                  (SELECT m.created_at FROM lifeinvader_messages m
-                  WHERE m.conversation_id = c.id ORDER BY m.id DESC LIMIT 1) AS last_message_at
+                  WHERE m.conversation_id = c.id ORDER BY m.id DESC LIMIT 1) AS last_message_at,
+                 %s
           FROM lifeinvader_conversations c
           INNER JOIN lifeinvader_feeds f ON f.id = c.feed_id
           WHERE c.ad_owner_identifier = ? OR c.guest_identifier = ?
           ORDER BY c.updated_at DESC
-          LIMIT 100]],
-        { identifier, identifier }
+          LIMIT 100]]):format(UNREAD_COUNT_SELECT),
+        { identifier, identifier, identifier, identifier, identifier }
     )
 
     local conversations = {}
@@ -271,7 +342,11 @@ function LiBridgeServerMessages.ListInbox(src, requestId)
         conversations[#conversations + 1] = mapConversationSummary(rows[i], identifier)
     end
 
-    respond(src, requestId, { ok = true, conversations = conversations })
+    respond(src, requestId, {
+        ok = true,
+        conversations = conversations,
+        unreadTotal = LiBridgeServerMessages.GetUnreadCount(identifier),
+    })
 end
 
 function LiBridgeServerMessages.ListMessages(src, requestId, conversationId)
@@ -292,6 +367,8 @@ function LiBridgeServerMessages.ListMessages(src, requestId, conversationId)
         respond(src, requestId, { ok = false, error = 'no_access' })
         return
     end
+
+    markConversationRead(conversation, identifier)
 
     local rows = LiBridge.MySQL.QuerySync(
         [[SELECT id, conversation_id, sender_identifier, body, created_at
@@ -321,6 +398,7 @@ function LiBridgeServerMessages.ListMessages(src, requestId, conversationId)
             }, identifier),
             phone = conversation.phone,
         },
+        unreadTotal = LiBridgeServerMessages.GetUnreadCount(identifier),
     })
 end
 

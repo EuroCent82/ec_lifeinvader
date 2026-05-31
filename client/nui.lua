@@ -4,6 +4,7 @@ EcLifeInvader = EcLifeInvader or {}
 
 local nuiOpen = false
 local pendingDeposits = {}
+local pendingWithdraws = {}
 local pendingMessages = {}
 local pendingPostAds = {}
 local pendingDeleteAds = {}
@@ -53,6 +54,16 @@ RegisterNetEvent('ec_lifeinvader:client:depositResult', function(requestId, resu
     cb(result or { ok = false, error = 'empty_response' })
 end)
 
+RegisterNetEvent('ec_lifeinvader:client:withdrawResult', function(requestId, result)
+    local cb = pendingWithdraws[requestId]
+    if not cb then
+        return
+    end
+
+    pendingWithdraws[requestId] = nil
+    cb(result or { ok = false, error = 'empty_response' })
+end)
+
 RegisterNetEvent('ec_lifeinvader:client:messagesResult', function(requestId, result)
     local cb = pendingMessages[requestId]
     if not cb then
@@ -97,6 +108,22 @@ RegisterNUICallback('deposit', function(data, cb)
         if pendingDeposits[requestId] then
             pendingDeposits[requestId]({ ok = false, error = 'timeout' })
             pendingDeposits[requestId] = nil
+        end
+    end)
+end)
+
+RegisterNUICallback('withdraw', function(data, cb)
+    local amount = tonumber(data and data.amount) or 0
+    local targetType = data and data.target or 'cash'
+
+    local requestId = ('%s_%s'):format(GetGameTimer(), math.random(10000, 99999))
+    pendingWithdraws[requestId] = cb
+    TriggerServerEvent('ec_lifeinvader:server:withdraw', requestId, amount, targetType)
+
+    SetTimeout(15000, function()
+        if pendingWithdraws[requestId] then
+            pendingWithdraws[requestId]({ ok = false, error = 'timeout' })
+            pendingWithdraws[requestId] = nil
         end
     end)
 end)

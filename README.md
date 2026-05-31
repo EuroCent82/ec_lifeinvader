@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img src="./docs/screenshots/01-user.png" alt="LifeInvader Spieler-Ansicht — Anzeigenfeed" width="720" />
+  <img src="./docs/screenshots/user-01-feed.png" alt="LifeInvader Anzeigenfeed" width="720" />
 </p>
 
 ---
@@ -23,9 +23,9 @@
 | --- | --- |
 | **Anzeigenfeed** | Live-Anzeigen mit Kategorien, Suche, Spotlight und Detail-Popup |
 | **Anzeige schalten** | Laufzeit, Zeichenpreis, Premium (Spotlight, Anonym, Live-Ticker) |
-| **Nachrichten** | Ingame-Chat pro Anzeige (Posteingang + WhatsApp-Style) |
+| **Nachrichten** | Ingame-Chat pro Anzeige — Badge für ungelesene Nachrichten in der Sidebar |
 | **Buchungshistorie** | Jede Anzeige mit **LIV-ID**, Status, Laufzeit — inkl. **Erneuern** abgelaufener Ads |
-| **LifeInvader-Konto** | Einzahlen vom Bar-/Bankkonto, Abbuchung beim Schalten |
+| **LifeInvader-Konto** | Einzahlen / Auszahlen (Bar oder Bank, siehe `Config.Deposit` / `Config.Withdraw`) |
 | **Meine Anzeigen** | Eigene aktive Inserate verwalten, verlängern und löschen |
 | **Telefonnummer** | IC-Nummer aus Inventar/Charinfo — Anzeige und Kopieren beim Schalten |
 | **Team-Panel** | Moderation, Blacklist, Rückerstattungen, Live-Ticker, **Nachrichtenverlauf** |
@@ -36,9 +36,29 @@ Resource-Name: **`ec_lifeinvader`**
 
 ## Screenshots
 
-| Spieler-Ansicht (Feed) | Team-Ansicht (Nachrichten) |
-| --- | --- |
-| ![Spieler-Ansicht](./docs/screenshots/01-user.png) | ![Team-Ansicht](./docs/screenshots/02-team.png) |
+### Spieler-Ansicht
+
+| Anzeigenfeed | Anzeige schalten | Guthaben einzahlen |
+| --- | --- | --- |
+| ![Feed](./docs/screenshots/user-01-feed.png) | ![Create](./docs/screenshots/user-02-create.png) | ![Deposit](./docs/screenshots/user-03-deposit.png) |
+
+| Nachrichten | Meine Anzeigen | Buchungen |
+| --- | --- | --- |
+| ![Messages](./docs/screenshots/user-04-messages.png) | ![My Ads](./docs/screenshots/user-05-my-ads.png) | ![History](./docs/screenshots/user-06-history.png) |
+
+### Team-Ansicht
+
+| Kategorien | Gutscheine | Live-Ticker |
+| --- | --- | --- |
+| ![Categories](./docs/screenshots/team-01-categories.png) | ![Vouchers](./docs/screenshots/team-02-vouchers.png) | ![Ticker](./docs/screenshots/team-03-ticker.png) |
+
+| Anzeigen-Slots | Anzeigen-Laufzeit | Blacklist |
+| --- | --- | --- |
+| ![Slots](./docs/screenshots/team-04-slots.png) | ![Duration](./docs/screenshots/team-05-duration.png) | ![Blacklist](./docs/screenshots/team-06-blacklist.png) |
+
+| Anzeigen | Nachrichten | Rückerstattungen |
+| --- | --- | --- |
+| ![Ads](./docs/screenshots/team-07-ads.png) | ![Team Messages](./docs/screenshots/team-08-messages.png) | ![Refunds](./docs/screenshots/team-09-refunds.png) |
 
 ---
 
@@ -100,10 +120,10 @@ LifeInvader nutzt **Sprite 77** (rotes **„L“** auf der Karte). Der Name **�
 
 ## Version 1.2.0
 
-- **Nachrichtensystem:** Posteingang, Chat pro Anzeige, Team-Verlauf mit Namen und Identifiern
+- **Nachrichtensystem:** Posteingang, Chat pro Anzeige, Team-Verlauf · Badge für ungelesene Nachrichten
+- **Guthaben:** Auszahlung auf Bar/Bank (`Config.Withdraw`) neben Einzahlung
 - **Entfernt:** Externe Telefon-Bridges (gcphone, z-phone, roadphone, lb-phone)
-- **Fix:** Anonyme Anzeigen — Nachrichten-Button für alle; MySQL über LiBridge-Sync
-- **Angepasst:** Lesbare Zeitstempel (DD.MM.YYYY HH:MM), README, Screenshots (Spieler-/Team-Ansicht)
+- **Angepasst:** README, 15 UI-Screenshots (Spieler + Team)
 
 ## Version 1.1.35
 

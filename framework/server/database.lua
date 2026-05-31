@@ -59,6 +59,18 @@ local SCHEMA_PATCHES = {
         label = 'lifeinvader.ad_duration_bonus_days',
         alter = 'ALTER TABLE lifeinvader ADD COLUMN ad_duration_bonus_days INT NOT NULL DEFAULT 0 AFTER ad_slot_bonus',
     },
+    {
+        table = 'lifeinvader_conversations',
+        column = 'ad_owner_last_read_at',
+        label = 'lifeinvader_conversations.ad_owner_last_read_at',
+        alter = 'ALTER TABLE lifeinvader_conversations ADD COLUMN ad_owner_last_read_at TIMESTAMP NULL DEFAULT NULL AFTER guest_name',
+    },
+    {
+        table = 'lifeinvader_conversations',
+        column = 'guest_last_read_at',
+        label = 'lifeinvader_conversations.guest_last_read_at',
+        alter = 'ALTER TABLE lifeinvader_conversations ADD COLUMN guest_last_read_at TIMESTAMP NULL DEFAULT NULL AFTER ad_owner_last_read_at',
+    },
 }
 
 local function fakeEnabled()
