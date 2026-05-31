@@ -72,6 +72,19 @@ RegisterNetEvent('ec_lifeinvader:client:categoriesUpdated', function(categories)
     })
 end)
 
+RegisterNetEvent('ec_lifeinvader:client:messageReceived', function(payload)
+    if not nuiOpen or type(payload) ~= 'table' then
+        return
+    end
+
+    SendNUIMessage({
+        action = 'messageReceived',
+        conversationId = payload.conversationId,
+        message = payload.message,
+        unreadTotal = payload.unreadTotal,
+    })
+end)
+
 RegisterNetEvent('ec_lifeinvader:client:openNui', function(payload)
     nuiOpen = true
     SetNuiFocus(true, true)

@@ -172,19 +172,25 @@ local function markConversationRead(conversation, identifier)
     end
 end
 
+local function recipientIdentifierFor(conversation, senderIdentifier)
+    if not conversation or not senderIdentifier then
+        return nil
+    end
+
+    if senderIdentifier == conversation.ad_owner_identifier then
+        return conversation.guest_identifier
+    end
+
+    return conversation.ad_owner_identifier
+end
+
 local function notifyMessageRecipient(conversation, senderIdentifier)
     local cfg = messagesCfg().notifications or {}
     if cfg.enabled == false or not conversation or not senderIdentifier then
         return
     end
 
-    local recipientIdentifier
-    if senderIdentifier == conversation.ad_owner_identifier then
-        recipientIdentifier = conversation.guest_identifier
-    else
-        recipientIdentifier = conversation.ad_owner_identifier
-    end
-
+    local recipientIdentifier = recipientIdentifierFor(conversation, senderIdentifier)
     if not recipientIdentifier or recipientIdentifier == senderIdentifier then
         return
     end
@@ -208,6 +214,28 @@ local function notifyMessageRecipient(conversation, senderIdentifier)
         type = notifyType,
         unreadTotal = unreadTotal,
         adTitle = conversation.feed_title or 'Anzeige',
+    })
+end
+
+local function pushMessageToRecipientNui(conversation, senderIdentifier, row)
+    if not conversation or not row or not senderIdentifier then
+        return
+    end
+
+    local recipientIdentifier = recipientIdentifierFor(conversation, senderIdentifier)
+    if not recipientIdentifier or recipientIdentifier == senderIdentifier then
+        return
+    end
+
+    local recipientSource = LiBridge.Server.GetSourceByIdentifier(recipientIdentifier)
+    if not recipientSource then
+        return
+    end
+
+    TriggerClientEvent('ec_lifeinvader:client:messageReceived', recipientSource, {
+        conversationId = tonumber(conversation.id),
+        message = mapMessageRow(row, recipientIdentifier),
+        unreadTotal = LiBridgeServerMessages.GetUnreadCount(recipientIdentifier),
     })
 end
 
@@ -562,6 +590,7 @@ function LiBridgeServerMessages.SendMessage(src, requestId, conversationId, body
         )
 
         notifyMessageRecipient(conversation, identifier)
+        pushMessageToRecipientNui(conversation, identifier, row)
 
         respond(src, requestId, {
             ok = true,
