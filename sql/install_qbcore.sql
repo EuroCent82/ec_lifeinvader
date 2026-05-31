@@ -99,9 +99,10 @@ CREATE TABLE IF NOT EXISTS `lifeinvader_voucher_redemptions` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `voucher_id` INT UNSIGNED NOT NULL,
     `identifier` VARCHAR(128) NOT NULL COMMENT 'QBCore citizenid',
+    `feed_id` INT UNSIGNED NULL DEFAULT NULL COMMENT 'Anzeige bei Einlösung',
     `redeemed_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_lifeinvader_voucher_player` (`voucher_id`, `identifier`),
+    KEY `idx_lifeinvader_voucher_redemptions_voucher` (`voucher_id`),
     KEY `idx_lifeinvader_voucher_redemptions_identifier` (`identifier`),
     CONSTRAINT `fk_lifeinvader_voucher_redemptions_voucher`
         FOREIGN KEY (`voucher_id`) REFERENCES `lifeinvader_vouchers` (`id`) ON DELETE CASCADE

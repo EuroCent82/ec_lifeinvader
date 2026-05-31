@@ -100,55 +100,143 @@ local function incrementUses(voucherId, cb)
     )
 end
 
-function LiBridgeServerVouchers.ConsumeForAd(identifier, code, amountDue, cb)
+--- Nur prüfen + Rabatt berechnen (keine DB-Schreibvorgänge).
+--- @param cb fun(ok: boolean, errorKey: string|nil, discount: number, meta: table|nil)
+function LiBridgeServerVouchers.ResolveDiscountForAd(identifier, code, amountDue, cb)
     amountDue = math.max(0, math.floor(tonumber(amountDue) or 0))
     code = LiBridgeServerVouchers.NormalizeCode(code)
 
     if code == '' then
-        cb(true, nil, 0)
+        cb(true, nil, 0, nil)
         return
     end
 
     if not LiBridgeServerVouchers.Enabled() then
-        cb(false, 'feature_disabled', 0)
+        cb(false, 'feature_disabled', 0, nil)
         return
     end
 
     LiBridgeServerVouchers.EvaluateCode(code, identifier, function(valid, errorKey, value, voucherId, perPlayerOnce)
         if not valid then
-            cb(false, errorKey or 'invalid_voucher', 0)
+            cb(false, errorKey or 'invalid_voucher', 0, nil)
             return
         end
 
         local discount = math.min(tonumber(value) or 0, amountDue)
+        cb(true, nil, discount, {
+            voucherId = voucherId,
+            code = code,
+            perPlayerOnce = perPlayerOnce,
+            discount = discount,
+        })
+    end)
+end
 
-        local function finalizeUses()
-            incrementUses(voucherId, function(ok)
-                if not ok then
-                    cb(false, 'exhausted', 0)
+--- Nach erfolgreicher Anzeigen-Buchung: Einlösung protokollieren + uses_count erhöhen.
+--- @param cb fun(ok: boolean, errorKey: string|nil)
+function LiBridgeServerVouchers.CommitRedemptionForAd(identifier, meta, feedId, cb)
+    cb = cb or function() end
+
+    if not meta or not meta.voucherId then
+        cb(true)
+        return
+    end
+
+    feedId = feedId and tonumber(feedId) or nil
+
+    local function insertRedemption()
+        LiBridge.MySQL.Insert(
+            'INSERT INTO lifeinvader_voucher_redemptions (voucher_id, identifier, feed_id) VALUES (?, ?, ?)',
+            { meta.voucherId, identifier, feedId },
+            function(redemptionId)
+                if not redemptionId then
+                    cb(false, 'db_failed')
                     return
                 end
-                cb(true, nil, discount)
-            end)
-        end
 
-        if perPlayerOnce then
-            LiBridge.MySQL.Insert(
-                'INSERT INTO lifeinvader_voucher_redemptions (voucher_id, identifier) VALUES (?, ?)',
-                { voucherId, identifier },
-                function(redemptionId)
-                    if not redemptionId then
-                        cb(false, 'already_redeemed', 0)
+                incrementUses(meta.voucherId, function(ok)
+                    if not ok then
+                        cb(false, 'exhausted')
                         return
                     end
-                    finalizeUses()
+                    cb(true)
+                end)
+            end
+        )
+    end
+
+    if meta.perPlayerOnce then
+        LiBridge.MySQL.Query(
+            [[SELECT COUNT(*) AS player_redeemed
+              FROM lifeinvader_voucher_redemptions
+              WHERE voucher_id = ? AND identifier = ?]],
+            { meta.voucherId, identifier },
+            function(rows)
+                local count = rows and rows[1] and tonumber(rows[1].player_redeemed) or 0
+                if count > 0 then
+                    cb(false, 'already_redeemed')
+                    return
+                end
+                insertRedemption()
+            end
+        )
+        return
+    end
+
+    insertRedemption()
+end
+
+function LiBridgeServerVouchers.ResetPlayerRedemption(code, identifier, cb)
+    code = LiBridgeServerVouchers.NormalizeCode(code)
+    identifier = type(identifier) == 'string' and identifier:gsub('^%s+', ''):gsub('%s+$', '') or ''
+
+    if code == '' or identifier == '' then
+        cb(false, 'invalid_args', 0)
+        return
+    end
+
+    LiBridge.MySQL.Query(
+        'SELECT id FROM lifeinvader_vouchers WHERE code = ? LIMIT 1',
+        { code },
+        function(rows)
+            local row = rows and rows[1]
+            if not row then
+                cb(false, 'not_found', 0)
+                return
+            end
+
+            local voucherId = tonumber(row.id)
+
+            LiBridge.MySQL.Query(
+                [[SELECT COUNT(*) AS removed FROM lifeinvader_voucher_redemptions
+                  WHERE voucher_id = ? AND identifier = ?]],
+                { voucherId, identifier },
+                function(countRows)
+                    local removed = countRows and countRows[1] and tonumber(countRows[1].removed) or 0
+                    if removed < 1 then
+                        cb(false, 'no_redemption', 0)
+                        return
+                    end
+
+                    LiBridge.MySQL.Execute(
+                        'DELETE FROM lifeinvader_voucher_redemptions WHERE voucher_id = ? AND identifier = ?',
+                        { voucherId, identifier },
+                        function()
+                            LiBridge.MySQL.Execute(
+                                [[UPDATE lifeinvader_vouchers
+                                  SET uses_count = GREATEST(0, uses_count - ?), updated_at = CURRENT_TIMESTAMP
+                                  WHERE id = ?]],
+                                { removed, voucherId },
+                                function()
+                                    cb(true, nil, removed)
+                                end
+                            )
+                        end
+                    )
                 end
             )
-            return
         end
-
-        finalizeUses()
-    end)
+    )
 end
 
 RegisterNetEvent('ec_lifeinvader:server:validateVoucher', function(requestId, code)

@@ -89,6 +89,12 @@ local SCHEMA_PATCHES = {
         label = 'lifeinvader_vouchers.internal_note',
         alter = 'ALTER TABLE lifeinvader_vouchers ADD COLUMN internal_note VARCHAR(512) NULL DEFAULT NULL AFTER per_player_once',
     },
+    {
+        table = 'lifeinvader_voucher_redemptions',
+        column = 'feed_id',
+        label = 'lifeinvader_voucher_redemptions.feed_id',
+        alter = 'ALTER TABLE lifeinvader_voucher_redemptions ADD COLUMN feed_id INT UNSIGNED NULL DEFAULT NULL AFTER identifier',
+    },
 }
 
 local function fakeEnabled()
@@ -322,6 +328,43 @@ local function ensureColumn(patch, cb)
     end)
 end
 
+local function indexExists(tableName, indexName, cb)
+    LiBridge.MySQL.Query(
+        [[SELECT COUNT(*) AS count FROM information_schema.statistics
+          WHERE table_schema = DATABASE()
+            AND table_name = ?
+            AND index_name = ?]],
+        { tableName, indexName },
+        function(result)
+            local count = 0
+            if result and result[1] then
+                count = tonumber(result[1].count or result[1]['COUNT(*)']) or 0
+            end
+            cb(count > 0)
+        end
+    )
+end
+
+local function dropPerPlayerVoucherUniqueIndex(cb)
+    cb = cb or function() end
+
+    indexExists('lifeinvader_voucher_redemptions', 'uk_lifeinvader_voucher_player', function(exists)
+        if not exists then
+            cb(true, false)
+            return
+        end
+
+        LiBridge.MySQL.Query(
+            'ALTER TABLE lifeinvader_voucher_redemptions DROP INDEX uk_lifeinvader_voucher_player',
+            {},
+            function()
+                LiBridge.Debug('Schema-Patch: uk_lifeinvader_voucher_player entfernt')
+                cb(true, true)
+            end
+        )
+    end)
+end
+
 local function collectMissingPatches(index, missing, cb)
     if index > #SCHEMA_PATCHES then
         cb(missing)
@@ -399,6 +442,23 @@ function LiBridgeServerDatabase.EnsureSchemaPatches(cb)
     runPatch(1, {})
 end
 
+function LiBridgeServerDatabase.EnsureSchemaIndexPatches(cb)
+    cb = cb or function() end
+
+    dropPerPlayerVoucherUniqueIndex(function(ok, wasApplied)
+        if not ok then
+            cb(false, {})
+            return
+        end
+
+        local applied = {}
+        if wasApplied then
+            applied[#applied + 1] = 'lifeinvader_voucher_redemptions.uk_lifeinvader_voucher_player (drop)'
+        end
+        cb(true, applied)
+    end)
+end
+
 function LiBridgeServerDatabase.RepairSchema(cb)
     cb = cb or function() end
 
@@ -414,8 +474,19 @@ function LiBridgeServerDatabase.RepairSchema(cb)
                 return
             end
 
-            LiBridgeServerDatabase.GetSchemaReport(function(report)
-                cb(report.ok == true, report.ok and 'ok' or 'incomplete', report, applied)
+            LiBridgeServerDatabase.EnsureSchemaIndexPatches(function(indexOk, indexApplied)
+                if not indexOk then
+                    cb(false, 'patch_failed', nil, applied)
+                    return
+                end
+
+                for i = 1, #indexApplied do
+                    applied[#applied + 1] = indexApplied[i]
+                end
+
+                LiBridgeServerDatabase.GetSchemaReport(function(report)
+                    cb(report.ok == true, report.ok and 'ok' or 'incomplete', report, applied)
+                end)
             end)
         end)
     end)

@@ -131,6 +131,17 @@ local function respondPostWithSlots(identifier, src, requestId, payload)
     end)
 end
 
+local function respondPostWithFeedData(identifier, src, requestId, payload)
+    LiBridgeServerFeeds.RefetchPlayerFeed(identifier, function(ads, history)
+        LiBridgeServerFeeds.GetPlayerMyAds(identifier, function(myAds)
+            payload.ads = ads
+            payload.history = history
+            payload.myAds = myAds
+            respondPostWithSlots(identifier, src, requestId, payload)
+        end)
+    end)
+end
+
 local function requireAdSlot(identifier, src, requestId, onAllowed)
     LiBridgeServerAdSlots.CanPostNewAd(identifier, function(canPost, active, max)
         if not canPost then
@@ -247,43 +258,31 @@ postAdContinue = function(src, requestId, data, identifier)
         end, excludeFeedId)
     end
 
-    local function applyVoucherThenCharge(chargePrice, continueFn)
-        chargePrice = math.max(0, math.floor(tonumber(chargePrice) or 0))
+    local function finishPost(grossChargePrice)
+        grossChargePrice = math.max(0, math.floor(tonumber(grossChargePrice) or 0))
 
-        local voucherCode = LiBridgeServerVouchers.NormalizeCode(data.voucherCode or '')
-        if voucherCode == '' or not LiBridgeServerVouchers or not LiBridgeServerVouchers.Enabled() then
-            continueFn(chargePrice)
-            return
-        end
-
-        LiBridgeServerVouchers.ConsumeForAd(identifier, voucherCode, chargePrice, function(ok, err, discount)
-            if not ok then
-                respondPost(src, requestId, { ok = false, error = err or 'invalid_voucher' })
+        LiBridgeServerVouchers.ResolveDiscountForAd(identifier, data.voucherCode, grossChargePrice, function(vOk, vErr, discount, voucherMeta)
+            if not vOk then
+                respondPost(src, requestId, { ok = false, error = vErr or 'invalid_voucher' })
                 return
             end
 
-            continueFn(math.max(0, chargePrice - (discount or 0)))
-        end)
-    end
+            local chargePrice = math.max(0, grossChargePrice - (discount or 0))
+            local clientPrice = math.floor(tonumber(data.price) or -1)
+            if clientPrice >= 0 and math.abs(clientPrice - chargePrice) > 1 then
+                respondPost(src, requestId, { ok = false, error = 'price_mismatch' })
+                return
+            end
 
-    local function finishPost(chargePrice)
-        chargePrice = math.max(0, math.floor(tonumber(chargePrice) or 0))
-
-        local clientPrice = math.floor(tonumber(data.price) or -1)
-        if clientPrice >= 0 and math.abs(clientPrice - chargePrice) > 1 then
-            respondPost(src, requestId, { ok = false, error = 'price_mismatch' })
-            return
-        end
-
-    LiBridgeServerAccount.RemoveBalance(identifier, chargePrice, function(paid, balance, payErr)
-        if not paid then
-            respondPost(src, requestId, {
-                ok = false,
-                error = payErr == 'insufficient_balance' and 'insufficient_balance' or 'payment_failed',
-                balance = balance,
-            })
-            return
-        end
+        LiBridgeServerAccount.RemoveBalance(identifier, chargePrice, function(paid, balance, payErr)
+            if not paid then
+                respondPost(src, requestId, {
+                    ok = false,
+                    error = payErr == 'insufficient_balance' and 'insufficient_balance' or 'payment_failed',
+                    balance = balance,
+                })
+                return
+            end
 
         local insertQuery = ([[
             INSERT INTO lifeinvader_feeds (
@@ -316,16 +315,15 @@ postAdContinue = function(src, requestId, data, identifier)
                 title = trim(data.title),
             }, src)
 
-            LiBridgeServerFeeds.RefetchPlayerFeed(identifier, function(ads, history)
-                respondPostWithSlots(identifier, src, requestId, {
+            LiBridgeServerVouchers.CommitRedemptionForAd(identifier, voucherMeta, insertId, function()
+                respondPostWithFeedData(identifier, src, requestId, {
                     ok = true,
                     balance = balance,
-                    ads = ads,
-                    history = history,
                 })
             end)
         end)
     end)
+        end)
     end
 
     if extendFromId then
@@ -351,11 +349,17 @@ postAdContinue = function(src, requestId, data, identifier)
                     end
 
                 local credit = LiBridgeServerFeeds.CalculateRemainingCredit(row)
-                local chargePrice = math.max(0, grossPrice - credit)
+                local grossChargePrice = math.max(0, grossPrice - credit)
 
                 ensureTickerCapacity(extendFromId, function()
                     local tickerEnabledClause = wantsTicker and ', ticker_enabled = 1' or ''
-                    applyVoucherThenCharge(chargePrice, function(finalPrice)
+                    LiBridgeServerVouchers.ResolveDiscountForAd(identifier, data.voucherCode, grossChargePrice, function(vOk, vErr, discount, voucherMeta)
+                        if not vOk then
+                            respondPost(src, requestId, { ok = false, error = vErr or 'invalid_voucher' })
+                            return
+                        end
+
+                        local finalPrice = math.max(0, grossChargePrice - (discount or 0))
                         local clientPrice = math.floor(tonumber(data.price) or -1)
                         if clientPrice >= 0 and math.abs(clientPrice - finalPrice) > 1 then
                             respondPost(src, requestId, { ok = false, error = 'price_mismatch' })
@@ -410,12 +414,10 @@ postAdContinue = function(src, requestId, data, identifier)
                                     return
                                 end
 
-                                LiBridgeServerFeeds.RefetchPlayerFeed(identifier, function(ads, history)
-                                    respondPostWithSlots(identifier, src, requestId, {
+                                LiBridgeServerVouchers.CommitRedemptionForAd(identifier, voucherMeta, extendFromId, function()
+                                    respondPostWithFeedData(identifier, src, requestId, {
                                         ok = true,
                                         balance = balance,
-                                        ads = ads,
-                                        history = history,
                                         extensionCredit = credit,
                                         charged = finalPrice,
                                     })
@@ -450,7 +452,7 @@ postAdContinue = function(src, requestId, data, identifier)
 
                     requireAdSlot(identifier, src, requestId, function()
                         ensureTickerCapacity(nil, function()
-                            applyVoucherThenCharge(grossPrice, finishPost)
+                            finishPost(grossPrice)
                         end)
                     end)
                 end)
@@ -467,7 +469,7 @@ postAdContinue = function(src, requestId, data, identifier)
 
         requireAdSlot(identifier, src, requestId, function()
             ensureTickerCapacity(nil, function()
-                applyVoucherThenCharge(grossPrice, finishPost)
+                finishPost(grossPrice)
             end)
         end)
     end)

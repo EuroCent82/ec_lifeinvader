@@ -210,3 +210,43 @@ RegisterNetEvent('ec_lifeinvader:server:teamDeleteVoucher', function(requestId, 
         end
     )
 end)
+
+RegisterNetEvent('ec_lifeinvader:server:teamListVoucherRedemptions', function(requestId, voucherId)
+    local src = source
+
+    if not LiBridgeServerTeam.Guard(src, requestId, 'vouchers') then
+        return
+    end
+
+    voucherId = math.floor(tonumber(voucherId) or 0)
+    if voucherId <= 0 then
+        LiBridgeServerTeam.Respond(src, requestId, { ok = false, error = 'invalid_id' })
+        return
+    end
+
+    LiBridge.MySQL.Query(
+        [[SELECT r.id, r.identifier, r.feed_id, r.redeemed_at,
+                 f.title AS feed_title, f.author_name AS feed_author
+          FROM lifeinvader_voucher_redemptions r
+          LEFT JOIN lifeinvader_feeds f ON f.id = r.feed_id
+          WHERE r.voucher_id = ?
+          ORDER BY r.redeemed_at DESC
+          LIMIT 100]],
+        { voucherId },
+        function(rows)
+            local redemptions = {}
+            for _, row in ipairs(rows or {}) do
+                redemptions[#redemptions + 1] = {
+                    id = tonumber(row.id),
+                    identifier = row.identifier,
+                    feedId = row.feed_id and tonumber(row.feed_id) or nil,
+                    feedTitle = row.feed_title,
+                    feedAuthor = row.feed_author,
+                    redeemedAt = row.redeemed_at,
+                }
+            end
+
+            LiBridgeServerTeam.Respond(src, requestId, { ok = true, redemptions = redemptions })
+        end
+    )
+end)

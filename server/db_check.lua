@@ -111,6 +111,31 @@ local function runUnreadReset(source, args)
     reply(source, 'Gelesen-Status für alle Chats zurückgesetzt.')
 end
 
+local function runVoucherReset(source, args)
+    local code = args[2]
+    local identifier = args[3]
+
+    if type(code) ~= 'string' or code == '' or type(identifier) ~= 'string' or identifier == '' then
+        reply(source, 'Nutze: livdb voucher-reset <CODE> <identifier>')
+        return
+    end
+
+    LiBridgeServerVouchers.ResetPlayerRedemption(code, identifier, function(ok, err, removed)
+        if not ok then
+            if err == 'not_found' then
+                reply(source, 'Gutschein-Code nicht gefunden.')
+            elseif err == 'no_redemption' then
+                reply(source, 'Keine Einlösung für diesen Spieler gefunden.')
+            else
+                reply(source, ('Zurücksetzen fehlgeschlagen (%s).'):format(err or 'unknown'))
+            end
+            return
+        end
+
+        reply(source, ('Einlösung entfernt (%d Eintrag/Einträge) — Spieler kann Code erneut nutzen.'):format(removed or 1))
+    end)
+end
+
 RegisterCommand(dbCheckCommand(), function(source, args)
     if not canRunDbCheck(source) then
         if source ~= 0 then
@@ -136,5 +161,10 @@ RegisterCommand(dbCheckCommand(), function(source, args)
         return
     end
 
-    reply(source, 'Nutze: livdb check | livdb fix | livdb unread-reset [conversationId]')
+    if sub == 'voucher-reset' or sub == 'reset-voucher' then
+        runVoucherReset(source, args)
+        return
+    end
+
+    reply(source, 'Nutze: livdb check | livdb fix | livdb unread-reset [conversationId] | livdb voucher-reset <CODE> <identifier>')
 end, false)

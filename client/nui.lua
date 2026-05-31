@@ -343,6 +343,10 @@ registerTeamCallback('teamDeleteVoucher', function(requestId, data)
     TriggerServerEvent('ec_lifeinvader:server:teamDeleteVoucher', requestId, tonumber(data.id))
 end)
 
+registerTeamCallback('teamListVoucherRedemptions', function(requestId, data)
+    TriggerServerEvent('ec_lifeinvader:server:teamListVoucherRedemptions', requestId, tonumber(data.id))
+end)
+
 registerTeamCallback('teamListCategories', function(requestId)
     TriggerServerEvent('ec_lifeinvader:server:teamListCategories', requestId)
 end)

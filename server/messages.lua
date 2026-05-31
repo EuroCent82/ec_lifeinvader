@@ -601,7 +601,7 @@ end
 
 function LiBridgeServerMessages.TeamListFeedConversations(src, requestId, feedId)
     feedId = tonumber(feedId)
-    if not LiBridgeServerTeam.Guard(src, requestId, 'ads') then
+    if not LiBridgeServerTeam.Guard(src, requestId, 'messages') then
         return
     end
 
@@ -661,7 +661,7 @@ end
 
 function LiBridgeServerMessages.TeamListConversationMessages(src, requestId, conversationId)
     conversationId = tonumber(conversationId)
-    if not LiBridgeServerTeam.Guard(src, requestId, 'ads') then
+    if not LiBridgeServerTeam.Guard(src, requestId, 'messages') then
         return
     end
 
@@ -745,7 +745,7 @@ local function mapTeamConversationRow(row)
 end
 
 function LiBridgeServerMessages.TeamListConversations(src, requestId, filters)
-    if not LiBridgeServerTeam.Guard(src, requestId, 'ads') then
+    if not LiBridgeServerTeam.Guard(src, requestId, 'messages') then
         return
     end
 

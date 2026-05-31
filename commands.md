@@ -36,6 +36,7 @@ Basisbefehl konfigurierbar über `Config.Database.checkCommand` (Standard: **`li
 | `livdb fix` · `livdb repair` | wie oben | Startet `RepairSchema`: legt fehlende Tabellen an und wendet Spalten-Patches an. Gibt angewendete Patches und abschließenden Status aus. |
 | `livdb unread-reset` | wie oben | Setzt `ad_owner_last_read_at` und `guest_last_read_at` in **allen** Chats auf `NULL` → alle Unterhaltungen erscheinen wieder als ungelesen (Tests). |
 | `livdb unread-reset [id]` | wie oben | Wie oben, aber nur für die Konversation mit der angegebenen numerischen ID. |
+| `livdb voucher-reset <CODE> <identifier>` | wie oben | Entfernt die Einlösung eines Spielers für einen Gutschein (z. B. wenn fälschlich als eingelöst markiert) — `uses_count` wird angepasst, Spieler kann den Code erneut nutzen. |
 
 **Konsole vs. Spiel:** Mit `Config.Database.checkConsoleOnly = true` funktioniert der Befehl nur in der Server-Konsole (txAdmin), nicht als `/livdb` im Spiel.
 
@@ -129,6 +130,7 @@ Entfernt den zuletzt erzeugten Test-Blip.
 | `livdb check` | Admin / Konsole | DB-Schema prüfen |
 | `livdb fix` | Admin / Konsole | DB-Schema reparieren |
 | `livdb unread-reset [id]` | Admin / Konsole | Gelesen-Status zurücksetzen |
+| `livdb voucher-reset <CODE> <identifier>` | Admin / Konsole | Gutschein-Einlösung für Spieler zurücksetzen |
 | `/linotify …` | Alle (Test) | Nachrichten-Notify-Vorschau |
 | `ec_li_testnotify …` | Admin / Konsole | Feed-Notify an alle senden |
 | `/ec_li_world_respawn` | Dev | Standorte neu spawnen |

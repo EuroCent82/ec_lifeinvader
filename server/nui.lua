@@ -26,6 +26,7 @@ local function buildOpenPayload(source, feedData)
             enabled = adminCfg.enabled ~= false,
             tabLabel = adminCfg.tabLabel or 'Team',
             features = adminCfg.features or {},
+            access = LiBridgeServerTeam.BuildFeatureAccessForUi(source),
         },
         uiConfig = LiBridgeServerFeeds.BuildUiConfig(),
         adSlotPolicy = LiBridgeServerAdSlots.BuildPolicyForUi(),
