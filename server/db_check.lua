@@ -90,6 +90,27 @@ local function runFix(source)
     end)
 end
 
+local function runUnreadReset(source, args)
+    local conversationId = tonumber(args[2])
+
+    if conversationId then
+        LiBridge.MySQL.ExecuteSync(
+            [[UPDATE lifeinvader_conversations
+              SET ad_owner_last_read_at = NULL, guest_last_read_at = NULL
+              WHERE id = ?]],
+            { conversationId }
+        )
+        reply(source, ('Gelesen-Status für Chat #%d zurückgesetzt.'):format(conversationId))
+        return
+    end
+
+    LiBridge.MySQL.ExecuteSync(
+        'UPDATE lifeinvader_conversations SET ad_owner_last_read_at = NULL, guest_last_read_at = NULL',
+        {}
+    )
+    reply(source, 'Gelesen-Status für alle Chats zurückgesetzt.')
+end
+
 RegisterCommand(dbCheckCommand(), function(source, args)
     if not canRunDbCheck(source) then
         if source ~= 0 then
@@ -110,5 +131,10 @@ RegisterCommand(dbCheckCommand(), function(source, args)
         return
     end
 
-    reply(source, 'Nutze: livdb check | livdb fix')
+    if sub == 'unread-reset' or sub == 'reset-unread' then
+        runUnreadReset(source, args)
+        return
+    end
+
+    reply(source, 'Nutze: livdb check | livdb fix | livdb unread-reset [conversationId]')
 end, false)

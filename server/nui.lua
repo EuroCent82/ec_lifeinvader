@@ -10,6 +10,8 @@ local function buildOpenPayload(source, feedData)
             name = LiBridge.Server.GetCharacterName(source) or GetPlayerName(source) or 'Unbekannt',
             phone = phone or '',
             money = 0,
+            cash = LiBridgeServerFinance.GetCash(source),
+            bank = LiBridgeServerFinance.GetBank(source),
             identifier = identifier,
         },
         ads = feedData.ads or {},

@@ -6,6 +6,7 @@
 
 <p align="center">
   <a href="https://github.com/EuroCent82/ec_lifeinvader/releases"><img src="https://img.shields.io/badge/Version-1.2.0-ff3b30?style=for-the-badge" alt="Version 1.2.0" /></a>
+  <a href="https://docs.fivem.net/natives/?_0x804B9F7B"><img src="https://img.shields.io/badge/GameBuild-3323-f27d20?style=for-the-badge" alt="Game Build 3323" /></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="MIT License" /></a>
 </p>
 
@@ -23,9 +24,10 @@
 | --- | --- |
 | **Anzeigenfeed** | Live-Anzeigen mit Kategorien, Suche, Spotlight und Detail-Popup |
 | **Anzeige schalten** | Laufzeit, Zeichenpreis, Premium (Spotlight, Anonym, Live-Ticker) |
-| **Nachrichten** | Ingame-Chat pro Anzeige — Badge für ungelesene Nachrichten in der Sidebar |
+| **Nachrichten** | Ingame-Chat pro Anzeige — Badge beim Öffnen, ungelesen oben, nach ~12 s gelesen |
+| **Benachrichtigungen** | GTA-Feed (`CHAR_LIFEINVADER`) bei neuen Chat-Nachrichten · Test: `/linotify` |
 | **Buchungshistorie** | Jede Anzeige mit **LIV-ID**, Status, Laufzeit — inkl. **Erneuern** abgelaufener Ads |
-| **LifeInvader-Konto** | Einzahlen / Auszahlen (Bar oder Bank, siehe `Config.Deposit` / `Config.Withdraw`) |
+| **LifeInvader-Konto** | Ein-/Auszahlen mit Slider, Schnellbeträgen und **Alles** (Bar/Bank) |
 | **Meine Anzeigen** | Eigene aktive Inserate verwalten, verlängern und löschen |
 | **Telefonnummer** | IC-Nummer aus Inventar/Charinfo — Anzeige und Kopieren beim Schalten |
 | **Team-Panel** | Moderation, Blacklist, Rückerstattungen, Live-Ticker, **Nachrichtenverlauf** |
@@ -42,9 +44,13 @@ Resource-Name: **`ec_lifeinvader`**
 | --- | --- | --- |
 | ![Feed](./docs/screenshots/user-01-feed.png) | ![Create](./docs/screenshots/user-02-create.png) | ![Deposit](./docs/screenshots/user-03-deposit.png) |
 
-| Nachrichten | Meine Anzeigen | Buchungen |
+| Guthaben auszahlen | Nachrichten | Meine Anzeigen |
 | --- | --- | --- |
-| ![Messages](./docs/screenshots/user-04-messages.png) | ![My Ads](./docs/screenshots/user-05-my-ads.png) | ![History](./docs/screenshots/user-06-history.png) |
+| ![Withdraw](./docs/screenshots/user-04-withdraw.png) | ![Messages](./docs/screenshots/user-05-messages.png) | ![My Ads](./docs/screenshots/user-06-my-ads.png) |
+
+| Buchungen |
+| --- |
+| ![History](./docs/screenshots/user-07-history.png) |
 
 ### Team-Ansicht
 
@@ -75,6 +81,8 @@ Manueller SQL-Import: `sql/install_esx.sql` / `install_qbcore.sql` / `install_qb
 
 Bei Update von älteren Versionen: `livdb fix` oder SQL-Import — u. a. Tabellen `lifeinvader_conversations` und `lifeinvader_messages`.
 
+**Admin / DB:** `livdb check` · `livdb fix` · `livdb unread-reset [conversationId]` (Gelesen-Status für Tests zurücksetzen)
+
 ---
 
 ## Framework & Abhängigkeiten
@@ -90,7 +98,9 @@ Keine externe Phone-Resource nötig — Kontakt läuft über das integrierte Nac
 
 ## Konfiguration
 
-Alle Optionen sind in **`config.lua`** dokumentiert (Standorte, Preise, Permissions, Blips, Nachrichten, Telefon-Item).
+Alle Optionen sind in **`config.lua`** dokumentiert (Standorte, Preise, Permissions, Blips, Nachrichten, Ein-/Auszahlung, Notify-Texte).
+
+Nachrichten-Benachrichtigungen: `Config.Messages.notifications` (Sender, `CHAR_LIFEINVADER`, Texte für Inserent/Interessent).
 
 Nach Änderungen: Resource neu starten.
 
@@ -120,10 +130,12 @@ LifeInvader nutzt **Sprite 77** (rotes **„L“** auf der Karte). Der Name **�
 
 ## Version 1.2.0
 
-- **Nachrichtensystem:** Posteingang, Chat pro Anzeige, Team-Verlauf · Badge für ungelesene Nachrichten
-- **Guthaben:** Auszahlung auf Bar/Bank (`Config.Withdraw`) neben Einzahlung
+- **Nachrichtensystem:** Posteingang, Chat pro Anzeige, Team-Verlauf · ungelesen oben · Gelesen nach ~12 s im Chat
+- **Benachrichtigungen:** GTA Advanced Notification (`CHAR_LIFEINVADER`) für Inserent & Interessent · `/linotify` zum Testen
+- **Guthaben:** Auszahlung + Ein-/Auszahl-UI (Slider, Schnellbeträge, „Alles“ je Bar/Bank/LifeInvader-Guthaben)
+- **UI:** Nachrichten-Badge direkt beim Tablet-Öffnen · „Anzeige ansehen“ im Chat ohne doppelten Nachrichten-Button
 - **Entfernt:** Externe Telefon-Bridges (gcphone, z-phone, roadphone, lb-phone)
-- **Angepasst:** README, 15 UI-Screenshots (Spieler + Team)
+- **Sonstiges:** GameBuild-Badge · 16 Spieler-Screenshots (inkl. Auszahlung) · `livdb unread-reset`
 
 ## Version 1.1.35
 

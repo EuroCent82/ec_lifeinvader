@@ -39,6 +39,9 @@ RegisterNetEvent('ec_lifeinvader:client:openNui', function(payload)
         uiConfig = payload.uiConfig,
         adSlots = payload.adSlots,
         adSlotPolicy = payload.adSlotPolicy,
+        adDurationPolicy = payload.adDurationPolicy,
+        adDuration = payload.adDuration,
+        messagesUnreadCount = payload.messagesUnreadCount,
         lang = payload.lang,
         locale = payload.locale,
     })
@@ -351,6 +354,18 @@ RegisterNUICallback('messagesList', function(data, cb)
     local requestId = ('%s_%s'):format(GetGameTimer(), math.random(10000, 99999))
     pendingMessages[requestId] = cb
     TriggerServerEvent('ec_lifeinvader:server:messagesList', requestId, tonumber(data and data.conversationId))
+    SetTimeout(15000, function()
+        if pendingMessages[requestId] then
+            pendingMessages[requestId]({ ok = false, error = 'timeout' })
+            pendingMessages[requestId] = nil
+        end
+    end)
+end)
+
+RegisterNUICallback('messagesMarkRead', function(data, cb)
+    local requestId = ('%s_%s'):format(GetGameTimer(), math.random(10000, 99999))
+    pendingMessages[requestId] = cb
+    TriggerServerEvent('ec_lifeinvader:server:messagesMarkRead', requestId, tonumber(data and data.conversationId))
     SetTimeout(15000, function()
         if pendingMessages[requestId] then
             pendingMessages[requestId]({ ok = false, error = 'timeout' })

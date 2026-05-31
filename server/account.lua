@@ -172,7 +172,7 @@ function LiBridgeServerAccount.Deposit(source, amount, payFrom, cb)
                 cb({ ok = false, error = 'db_failed' })
                 return
             end
-            cb({ ok = true, balance = balance })
+            cb(LiBridgeServerFinance.AttachWalletSnapshot(source, { ok = true, balance = balance }))
         end)
         return
     end
@@ -185,7 +185,7 @@ function LiBridgeServerAccount.Deposit(source, amount, payFrom, cb)
             LiBridgeServerFinance.AddMoney(source, resolved, amount)
             response = { ok = false, error = 'db_failed' }
         else
-            response = { ok = true, balance = balance }
+            response = LiBridgeServerFinance.AttachWalletSnapshot(source, { ok = true, balance = balance })
         end
         done = true
     end)
@@ -267,7 +267,7 @@ function LiBridgeServerAccount.Withdraw(source, amount, payTo, cb)
                 return
             end
 
-            cb({ ok = true, balance = balance })
+            cb(LiBridgeServerFinance.AttachWalletSnapshot(source, { ok = true, balance = balance }))
         end)
         return
     end
@@ -294,7 +294,7 @@ function LiBridgeServerAccount.Withdraw(source, amount, payTo, cb)
             return
         end
 
-        response = { ok = true, balance = balance }
+        response = LiBridgeServerFinance.AttachWalletSnapshot(source, { ok = true, balance = balance })
         done = true
     end)
 

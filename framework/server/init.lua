@@ -49,6 +49,21 @@ function LiBridge.Server.GetCharacterName(source)
     return GetPlayerName(source)
 end
 
+function LiBridge.Server.GetSourceByIdentifier(identifier)
+    if type(identifier) ~= 'string' or identifier == '' then
+        return nil
+    end
+
+    for _, playerId in ipairs(GetPlayers()) do
+        local src = tonumber(playerId)
+        if src and LiBridge.Server.GetIdentifier(src) == identifier then
+            return src
+        end
+    end
+
+    return nil
+end
+
 function LiBridge.Server.HasPermission(source, key)
     return LiBridgeServerPermissions.Has(source, key)
 end

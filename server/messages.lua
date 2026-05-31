@@ -156,6 +156,45 @@ local function markConversationRead(conversation, identifier)
     end
 end
 
+local function notifyMessageRecipient(conversation, senderIdentifier)
+    local cfg = messagesCfg().notifications or {}
+    if cfg.enabled == false or not conversation or not senderIdentifier then
+        return
+    end
+
+    local recipientIdentifier
+    if senderIdentifier == conversation.ad_owner_identifier then
+        recipientIdentifier = conversation.guest_identifier
+    else
+        recipientIdentifier = conversation.ad_owner_identifier
+    end
+
+    if not recipientIdentifier or recipientIdentifier == senderIdentifier then
+        return
+    end
+
+    local recipientSource = LiBridge.Server.GetSourceByIdentifier(recipientIdentifier)
+    if not recipientSource then
+        return
+    end
+
+    local unreadTotal = LiBridgeServerMessages.GetUnreadCount(recipientIdentifier)
+    local isOwner = recipientIdentifier == conversation.ad_owner_identifier
+    local notifyType
+
+    if isOwner then
+        notifyType = unreadTotal > 1 and 'owner_multi' or 'owner_single'
+    else
+        notifyType = unreadTotal > 1 and 'inquirer_multi' or 'inquirer_reply'
+    end
+
+    TriggerClientEvent('ec_lifeinvader:client:messageNotify', recipientSource, {
+        type = notifyType,
+        unreadTotal = unreadTotal,
+        adTitle = conversation.feed_title or 'Anzeige',
+    })
+end
+
 function LiBridgeServerMessages.GetUnreadCount(identifier, cb)
     if messagesCfg().enabled == false or not identifier then
         if cb then
@@ -219,6 +258,7 @@ local function mapConversationSummary(row, viewerIdentifier)
         lastMessage = row.last_body,
         lastMessageAt = formatTimestamp(row.last_message_at),
         unreadCount = tonumber(row.unread_count) or 0,
+        sortAt = parseDateTimeToUnix(row.last_message_at) or parseDateTimeToUnix(row.updated_at) or 0,
     }
 end
 
@@ -332,9 +372,21 @@ function LiBridgeServerMessages.ListInbox(src, requestId)
           FROM lifeinvader_conversations c
           INNER JOIN lifeinvader_feeds f ON f.id = c.feed_id
           WHERE c.ad_owner_identifier = ? OR c.guest_identifier = ?
-          ORDER BY c.updated_at DESC
+          ORDER BY (
+              SELECT COUNT(*) FROM lifeinvader_messages um
+              WHERE um.conversation_id = c.id
+                AND um.sender_identifier <> ?
+                AND um.created_at > COALESCE(
+                  IF(c.ad_owner_identifier = ?, c.ad_owner_last_read_at, c.guest_last_read_at),
+                  '1970-01-01 00:00:00')
+          ) DESC,
+          COALESCE(
+              (SELECT MAX(m.created_at) FROM lifeinvader_messages m WHERE m.conversation_id = c.id),
+              c.updated_at,
+              c.created_at
+          ) DESC
           LIMIT 100]]):format(UNREAD_COUNT_SELECT),
-        { identifier, identifier, identifier, identifier, identifier }
+        { identifier, identifier, identifier, identifier, identifier, identifier }
     )
 
     local conversations = {}
@@ -368,8 +420,6 @@ function LiBridgeServerMessages.ListMessages(src, requestId, conversationId)
         return
     end
 
-    markConversationRead(conversation, identifier)
-
     local rows = LiBridge.MySQL.QuerySync(
         [[SELECT id, conversation_id, sender_identifier, body, created_at
           FROM lifeinvader_messages
@@ -398,6 +448,33 @@ function LiBridgeServerMessages.ListMessages(src, requestId, conversationId)
             }, identifier),
             phone = conversation.phone,
         },
+        unreadTotal = LiBridgeServerMessages.GetUnreadCount(identifier),
+    })
+end
+
+function LiBridgeServerMessages.MarkAsRead(src, requestId, conversationId)
+    conversationId = tonumber(conversationId)
+    if not conversationId then
+        respond(src, requestId, { ok = false, error = 'invalid_conversation' })
+        return
+    end
+
+    local identifier = LiBridge.Server.GetIdentifier(src)
+    if not identifier then
+        respond(src, requestId, { ok = false, error = 'no_identifier' })
+        return
+    end
+
+    local conversation = fetchConversation(conversationId)
+    if not conversation or not participantAllowed(conversation, identifier) then
+        respond(src, requestId, { ok = false, error = 'no_access' })
+        return
+    end
+
+    markConversationRead(conversation, identifier)
+
+    respond(src, requestId, {
+        ok = true,
         unreadTotal = LiBridgeServerMessages.GetUnreadCount(identifier),
     })
 end
@@ -466,6 +543,8 @@ function LiBridgeServerMessages.SendMessage(src, requestId, conversationId, body
               FROM lifeinvader_messages WHERE id = ? LIMIT 1]],
             { messageId }
         )
+
+        notifyMessageRecipient(conversation, identifier)
 
         respond(src, requestId, {
             ok = true,
@@ -682,6 +761,10 @@ end)
 
 RegisterNetEvent('ec_lifeinvader:server:messagesList', function(requestId, conversationId)
     LiBridgeServerMessages.ListMessages(source, requestId, conversationId)
+end)
+
+RegisterNetEvent('ec_lifeinvader:server:messagesMarkRead', function(requestId, conversationId)
+    LiBridgeServerMessages.MarkAsRead(source, requestId, conversationId)
 end)
 
 RegisterNetEvent('ec_lifeinvader:server:messagesSend', function(requestId, conversationId, body)

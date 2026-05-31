@@ -35,3 +35,13 @@ function LiBridgeClientEsx.Notify(message, notifyType)
     end
     return false
 end
+
+function LiBridgeClientEsx.ShowAdvancedNotification(sender, subject, msg, textureDict, iconType, flash, saveToBrief, hudColorIndex)
+    local esx = LiBridgeClientEsx.GetEsx()
+    if esx and esx.ShowAdvancedNotification then
+        esx.ShowAdvancedNotification(sender, subject, msg, textureDict, iconType, flash, saveToBrief, hudColorIndex)
+        return true
+    end
+
+    return false
+end

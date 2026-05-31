@@ -663,6 +663,7 @@ function LiBridgeServerFeeds.BuildUiConfig()
         deposit = Config.Deposit or { cash = true, bank = true },
         withdraw = Config.Withdraw or { cash = true, bank = false },
         messagesEnabled = (Config.Messages or {}).enabled ~= false,
+        messagesMarkReadDelayMs = tonumber((Config.Messages or {}).markReadDelayMs) or 12000,
     }
 end
 

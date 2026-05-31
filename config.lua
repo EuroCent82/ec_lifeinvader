@@ -136,6 +136,43 @@ Config.Phone = {
 Config.Messages = {
     enabled = true,
     maxLength = 500,
+    --- Chat als gelesen markieren, nachdem der Spieler X ms in der Unterhaltung war
+    markReadDelayMs = 12000,
+    --- GTA-Feed-Benachrichtigung bei neuen Chat-Nachrichten (CHAR_LIFEINVADER)
+    ---
+    --- Rollen:
+    ---   owner     = Inserent (hat die Anzeige geschaltet)
+    ---   inquirer  = Interessent (hat wegen einer Anzeige geschrieben)
+    ---
+    --- /linotify [type] [count|titel|text]
+    ---   owner_single | owner_multi | inquirer_reply | inquirer_multi | custom
+    ---   (guest_* = Alias für inquirer_*)
+    notifications = {
+        enabled = true,
+        queueIntervalMs = 3200,
+        sender = 'LifeInvader',
+        subject = 'Neue Nachricht',
+        textureDict = 'CHAR_LIFEINVADER',
+        iconType = 1,
+        flash = false,
+        saveToBrief = true,
+        testCommand = 'linotify',
+        templates = {
+            --- Inserent: Interessent schreibt wegen deiner Anzeige
+            owner_single = 'Neuer Interessent zu „%s“. Jemand will reden — check den Chat, bevor es wieder jemand anders tut.',
+            owner_multi = '%d ungelesene Nachrichten zu deinen Anzeigen. Beliebt oder Spam? LifeInvader verrät es nicht.',
+            --- Interessent: Inserent antwortet auf deine Anfrage
+            inquirer_reply = 'Antwort auf „%s“. Der Inserent meldet sich — ob seriös, prüfst du selbst. Wir kennen die Leute auch nicht.',
+            inquirer_multi = '%d Antworten auf deine Anfragen. Mindestens eine ist hoffentlich kein „Preis ist Preis“.',
+        },
+        --- Weitere Ideen zum Durchprobieren (/linotify custom … oder templates ersetzen):
+        --- owner_single  = 'Ping! Interesse an „%s“. Where your personal info is public info.'
+        --- owner_single  = 'Jemand will „%s“. Deine Nummer steht eh schon in der Anzeige — jetzt auch im Chat.'
+        --- owner_multi   = 'Dein Postfach brodelt: %d Nachrichten von Interessenten. Sei nett. Oder nicht.'
+        --- inquirer_reply = 'Gute Nachrichten: Antwort zu „%s“. Schlechte: LifeInvader haftet nicht.'
+        --- inquirer_reply = 'Der Verkäufer von „%s“ hat geantwortet. Vielleicht. Schau ins Tablet.'
+        --- inquirer_multi = '%d Inserenten haben reagiert. Einer davon ist vielleicht echt.'
+    },
 }
 
 --------------------------------------------------------------------------------

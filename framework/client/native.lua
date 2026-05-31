@@ -196,9 +196,6 @@ function LiBridgeClientNative.EnsureThread()
     threadStarted = true
 
     CreateThread(function()
-        local defaultPrompt = string.lower(tostring(getInteractionConfig().nativePrompt or PromptMode.TEXT_3D))
-        print(('^2[ec_lifeinvader]^0 Native [E]: prompt=%s (3d | help)'):format(defaultPrompt))
-
         while true do
             if #nativeZones == 0 then
                 Wait(getIdleWaitMs())

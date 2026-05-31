@@ -86,6 +86,13 @@ function LiBridgeServerFinance.AddMoney(source, accountType, amount)
     return frameworkModule().AddMoney(player, accountType, amount)
 end
 
+function LiBridgeServerFinance.AttachWalletSnapshot(source, response)
+    response = response or {}
+    response.cash = LiBridgeServerFinance.GetCash(source)
+    response.bank = LiBridgeServerFinance.GetBank(source)
+    return response
+end
+
 function LiBridgeServerFinance.CanWithdrawTo(accountType)
     if accountType == 'cash' then
         return Config.Withdraw and Config.Withdraw.cash ~= false
