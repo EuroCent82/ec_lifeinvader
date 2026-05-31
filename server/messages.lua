@@ -388,27 +388,24 @@ function LiBridgeServerMessages.ListInbox(src, requestId)
           FROM lifeinvader_conversations c
           INNER JOIN lifeinvader_feeds f ON f.id = c.feed_id
           WHERE c.ad_owner_identifier = ? OR c.guest_identifier = ?
-          ORDER BY (
-              SELECT COUNT(*) FROM lifeinvader_messages um
-              WHERE um.conversation_id = c.id
-                AND um.sender_identifier <> ?
-                AND um.created_at > COALESCE(
-                  IF(c.ad_owner_identifier = ?, c.ad_owner_last_read_at, c.guest_last_read_at),
-                  '1970-01-01 00:00:00')
-          ) DESC,
-          COALESCE(
-              (SELECT MAX(m.created_at) FROM lifeinvader_messages m WHERE m.conversation_id = c.id),
-              c.updated_at,
-              c.created_at
-          ) DESC
+          ORDER BY c.updated_at DESC
           LIMIT 100]]):format(UNREAD_COUNT_SELECT),
-        { identifier, identifier, identifier, identifier, identifier, identifier }
+        { identifier, identifier, identifier, identifier }
     )
 
     local conversations = {}
     for i = 1, #rows do
         conversations[#conversations + 1] = mapConversationSummary(rows[i], identifier)
     end
+
+    table.sort(conversations, function(a, b)
+        local unreadA = tonumber(a.unreadCount) or 0
+        local unreadB = tonumber(b.unreadCount) or 0
+        if unreadA ~= unreadB then
+            return unreadA > unreadB
+        end
+        return (tonumber(a.sortAt) or 0) > (tonumber(b.sortAt) or 0)
+    end)
 
     respond(src, requestId, {
         ok = true,
