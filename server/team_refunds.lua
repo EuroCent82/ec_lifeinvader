@@ -198,6 +198,16 @@ RegisterNetEvent('ec_lifeinvader:server:teamIssueRefund', function(requestId, da
                                     )
                                 end
 
+                                local targetSource = LiBridge.Server.GetSourceByIdentifier(targetIdentifier)
+                                if targetSource then
+                                    TriggerClientEvent('ec_lifeinvader:client:refundReceived', targetSource, {
+                                        amount = amount,
+                                        balance = newBalance,
+                                        reason = reason,
+                                        adTitle = row.title,
+                                    })
+                                end
+
                                 LiBridgeServerTeam.Respond(src, requestId, {
                                     ok = true,
                                     refund = {

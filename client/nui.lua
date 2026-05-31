@@ -23,6 +23,55 @@ RegisterNetEvent('ec_lifeinvader:client:openBlocked', function(banInfo)
     end
 end)
 
+RegisterNetEvent('ec_lifeinvader:client:refundReceived', function(payload)
+    if type(payload) ~= 'table' then
+        return
+    end
+
+    local amount = tonumber(payload.amount) or 0
+    local balance = tonumber(payload.balance)
+    local reason = tostring(payload.reason or '')
+
+    if balance then
+        SendNUIMessage({
+            action = 'balanceUpdate',
+            balance = balance,
+            notifyMessage = ('+%d $ auf dein LifeInvader-Konto'):format(amount),
+        })
+    end
+
+    local cfg = (Config.Refunds or {}).notifications or {}
+    if cfg.enabled == false then
+        return
+    end
+
+    local template = cfg.template or '+%s $ auf dein LifeInvader-Konto. Grund: %s'
+    local ok, message = pcall(function()
+        return template:format(tostring(amount), reason)
+    end)
+
+    if not ok or type(message) ~= 'string' or message == '' then
+        message = ('+%d $ auf dein LifeInvader-Konto.'):format(amount)
+    end
+
+    EcLifeInvader.ShowAdvancedNotification({
+        sender = cfg.sender or 'LifeInvader',
+        subject = cfg.subject or 'Rückerstattung',
+        message = message,
+        textureDict = cfg.textureDict or 'CHAR_LIFEINVADER',
+        iconType = cfg.iconType or 1,
+        flash = cfg.flash == true,
+        saveToBrief = cfg.saveToBrief ~= false,
+    })
+end)
+
+RegisterNetEvent('ec_lifeinvader:client:categoriesUpdated', function(categories)
+    SendNUIMessage({
+        action = 'categoriesUpdated',
+        categories = categories or {},
+    })
+end)
+
 RegisterNetEvent('ec_lifeinvader:client:openNui', function(payload)
     nuiOpen = true
     SetNuiFocus(true, true)

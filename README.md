@@ -81,7 +81,7 @@ Manueller SQL-Import: `sql/install_esx.sql` / `install_qbcore.sql` / `install_qb
 
 Bei Update von älteren Versionen: `livdb fix` oder SQL-Import — u. a. Tabellen `lifeinvader_conversations` und `lifeinvader_messages`.
 
-**Admin / DB:** `livdb check` · `livdb fix` · `livdb unread-reset [conversationId]` (Gelesen-Status für Tests zurücksetzen)
+**Admin / DB:** `livdb check` · `livdb fix` · `livdb unread-reset [conversationId]` (Gelesen-Status für Tests zurücksetzen) — Details: **[commands.md](./commands.md)**
 
 ---
 

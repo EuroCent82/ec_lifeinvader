@@ -78,6 +78,22 @@ local function authorFields(row)
     }
 end
 
+local function displayPhone(row, viewerIdentifier)
+    local phone = tostring(row.phone or '')
+    if phone == '' then
+        return ''
+    end
+
+    local isAnonymous = row.anonymous == 1 or row.anonymous == true
+    local isMine = viewerIdentifier ~= nil and row.identifier == viewerIdentifier
+
+    if isAnonymous and not isMine then
+        return ''
+    end
+
+    return phone
+end
+
 local function resolveFeedStatus(row)
     if row.status == 'deleted' then
         return 'deleted'
@@ -301,7 +317,7 @@ function LiBridgeServerFeeds.FormatAdRow(row, viewerIdentifier)
         author = authors.author,
         authorName = authors.authorName,
         wasAnonymous = authors.wasAnonymous,
-        phone = row.phone or '',
+        phone = displayPhone(row, viewerIdentifier),
         timestamp = relativeTimestamp(row.created_at),
         premium = spotlightActive or (premium and premium.spotlight ~= nil),
         isMine = isMine,
@@ -333,7 +349,7 @@ function LiBridgeServerFeeds.FormatHistoryRow(row)
         author = authors.author,
         authorName = authors.authorName,
         wasAnonymous = authors.wasAnonymous,
-        phone = row.phone or '',
+        phone = displayPhone(row, row.identifier),
         timestamp = relativeTimestamp(row.created_at),
         premium = spotlightActive or (premium and premium.spotlight ~= nil),
         status = status,

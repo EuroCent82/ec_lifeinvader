@@ -7,6 +7,40 @@ local function slugify(text)
     return text
 end
 
+local function mapCategoryRow(row)
+    return {
+        slug = row.slug,
+        label = row.label,
+        icon = row.icon or 'ellipsis',
+    }
+end
+
+local function broadcastPlayerCategories()
+    LiBridgeServerFeeds.GetCategories(function(rows)
+        local categories = {}
+        for _, row in ipairs(rows or {}) do
+            categories[#categories + 1] = mapCategoryRow(row)
+        end
+        TriggerClientEvent('ec_lifeinvader:client:categoriesUpdated', -1, categories)
+    end)
+end
+
+local function slugTaken(slug, excludeId, cb)
+    local query = 'SELECT id FROM lifeinvader_categories WHERE slug = ?'
+    local params = { slug }
+
+    if excludeId then
+        query = query .. ' AND id <> ?'
+        params[#params + 1] = excludeId
+    end
+
+    query = query .. ' LIMIT 1'
+
+    LiBridge.MySQL.Query(query, params, function(rows)
+        cb(rows and rows[1] ~= nil)
+    end)
+end
+
 RegisterNetEvent('ec_lifeinvader:server:teamListCategories', function(requestId)
     local src = source
 
@@ -60,6 +94,7 @@ RegisterNetEvent('ec_lifeinvader:server:teamSetCategoryEnabled', function(reques
             end
 
             LiBridgeServerTeam.Respond(src, requestId, { ok = true })
+            broadcastPlayerCategories()
         end
     )
 end)
@@ -89,6 +124,12 @@ RegisterNetEvent('ec_lifeinvader:server:teamUpdateCategory', function(requestId,
         return
     end
 
+    slugTaken(slug, categoryId, function(taken)
+        if taken then
+            LiBridgeServerTeam.Respond(src, requestId, { ok = false, error = 'duplicate_slug' })
+            return
+        end
+
     LiBridge.MySQL.Execute(
         [[UPDATE lifeinvader_categories
           SET slug = ?, label = ?, icon = ?, enabled = ?, sort_order = ?
@@ -111,8 +152,10 @@ RegisterNetEvent('ec_lifeinvader:server:teamUpdateCategory', function(requestId,
                     sortOrder = sortOrder,
                 },
             })
+            broadcastPlayerCategories()
         end
     )
+    end)
 end)
 
 RegisterNetEvent('ec_lifeinvader:server:teamDeleteCategory', function(requestId, categoryId)
@@ -142,7 +185,9 @@ RegisterNetEvent('ec_lifeinvader:server:teamDeleteCategory', function(requestId,
             LiBridge.MySQL.Query(
                 [[SELECT COUNT(*) AS count
                   FROM lifeinvader_feeds
-                  WHERE category = ? AND status IN ('active', 'expired')]],
+                  WHERE category = ?
+                    AND status = 'active'
+                    AND expires_at > NOW()]],
                 { slug },
                 function(countRows)
                     local count = tonumber(countRows and countRows[1] and countRows[1].count) or 0
@@ -161,6 +206,7 @@ RegisterNetEvent('ec_lifeinvader:server:teamDeleteCategory', function(requestId,
                             end
 
                             LiBridgeServerTeam.Respond(src, requestId, { ok = true, deletedId = categoryId })
+                            broadcastPlayerCategories()
                         end
                     )
                 end
@@ -187,6 +233,7 @@ RegisterNetEvent('ec_lifeinvader:server:teamReorderCategories', function(request
     local function applyNext()
         if index > #orderList then
             LiBridgeServerTeam.Respond(src, requestId, { ok = true })
+            broadcastPlayerCategories()
             return
         end
 
@@ -229,15 +276,22 @@ RegisterNetEvent('ec_lifeinvader:server:teamCreateCategory', function(requestId,
         return
     end
 
+    local enabled = data.enabled ~= false
     local createdBy = LiBridge.Server.GetIdentifier(src)
+
+    slugTaken(slug, nil, function(taken)
+        if taken then
+            LiBridgeServerTeam.Respond(src, requestId, { ok = false, error = 'duplicate_slug' })
+            return
+        end
 
     LiBridge.MySQL.Query('SELECT COALESCE(MAX(sort_order), -1) + 1 AS next_order FROM lifeinvader_categories', {}, function(result)
         local sortOrder = tonumber(result and result[1] and result[1].next_order) or 0
 
     LiBridge.MySQL.Insert(
         [[INSERT INTO lifeinvader_categories (slug, label, icon, enabled, sort_order, created_by)
-          VALUES (?, ?, ?, 1, ?, ?)]],
-        { slug, label, icon, sortOrder, createdBy },
+          VALUES (?, ?, ?, ?, ?, ?)]],
+        { slug, label, icon, enabled and 1 or 0, sortOrder, createdBy },
         function(insertId)
             if not insertId then
                 LiBridgeServerTeam.Respond(src, requestId, { ok = false, error = 'duplicate_or_db_failed' })
@@ -251,11 +305,13 @@ RegisterNetEvent('ec_lifeinvader:server:teamCreateCategory', function(requestId,
                     slug = slug,
                     label = label,
                     icon = icon,
-                    enabled = true,
+                    enabled = enabled,
                     sortOrder = sortOrder,
                 },
             })
+            broadcastPlayerCategories()
         end
     )
+    end)
     end)
 end)

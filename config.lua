@@ -692,6 +692,13 @@ Config.Blacklist = {
 
 Config.Refunds = {
     enabled = true,
+    --- Benachrichtigung an den erstatteten Spieler (GTA-Feed wie Nachrichten)
+    notifications = {
+        enabled = true,
+        sender = 'LifeInvader',
+        subject = 'Rückerstattung',
+        template = '+%s $ auf dein LifeInvader-Konto. Grund: %s',
+    },
 }
 
 --------------------------------------------------------------------------------

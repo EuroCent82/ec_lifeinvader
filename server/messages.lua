@@ -91,6 +91,22 @@ local function publicAuthorName(row, viewerIdentifier)
     return realName
 end
 
+local function publicPhone(row, viewerIdentifier)
+    local phone = tostring(row.phone or '')
+    if phone == '' then
+        return ''
+    end
+
+    if isAnonymousFeed(row) then
+        local ownerIdentifier = row.identifier or row.ad_owner_identifier
+        if ownerIdentifier ~= viewerIdentifier then
+            return ''
+        end
+    end
+
+    return phone
+end
+
 local function mapMessageRow(row, viewerIdentifier)
     return {
         id = tonumber(row.id),
@@ -249,7 +265,7 @@ local function mapConversationSummary(row, viewerIdentifier)
         feedId = tonumber(row.feed_id),
         adTitle = row.feed_title or row.title,
         adAuthor = displayAuthor,
-        adPhone = row.phone,
+        adPhone = publicPhone(row, viewerIdentifier),
         feedStatus = row.feed_status,
         partnerName = isOwner and (row.guest_name or 'Unbekannt') or displayAuthor,
         partnerIdentifier = isOwner and row.guest_identifier or row.ad_owner_identifier,
@@ -269,7 +285,7 @@ local function mapAdPayload(feed, viewerIdentifier)
         content = feed.content,
         category = feed.category,
         author = publicAuthorName(feed, viewerIdentifier),
-        phone = feed.phone,
+        phone = publicPhone(feed, viewerIdentifier),
     }
 end
 
@@ -446,7 +462,11 @@ function LiBridgeServerMessages.ListMessages(src, requestId, conversationId)
                 anonymous = conversation.anonymous,
                 ad_owner_identifier = conversation.ad_owner_identifier,
             }, identifier),
-            phone = conversation.phone,
+            phone = publicPhone({
+                phone = conversation.phone,
+                anonymous = conversation.anonymous,
+                ad_owner_identifier = conversation.ad_owner_identifier,
+            }, identifier),
         },
         unreadTotal = LiBridgeServerMessages.GetUnreadCount(identifier),
     })

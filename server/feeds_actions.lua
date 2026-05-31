@@ -182,12 +182,18 @@ postAdContinue = function(src, requestId, data, identifier)
     end
 
     local phone = trim(data.phone)
-    if phone == '' or phone == 'Keine Nummer' or phone == '—' then
-        phone = LiBridgeServerInventory.GetPhoneNumber(src) or ''
+    if phone == 'Keine Nummer' or phone == '—' then
+        phone = ''
+    end
+    if phone ~= '' and phone:match('[^0-9]') then
+        respondPost(src, requestId, { ok = false, error = 'phone_invalid' })
+        return
     end
     if phone == '' then
-        respondPost(src, requestId, { ok = false, error = 'phone_missing' })
-        return
+        phone = LiBridgeServerInventory.GetPhoneNumber(src) or ''
+        if phone ~= '' and phone:match('[^0-9]') then
+            phone = phone:gsub('[^0-9]', '')
+        end
     end
 
     local grossPrice, priceErr = LiBridgeServerFeeds.CalculatePrice(data)
