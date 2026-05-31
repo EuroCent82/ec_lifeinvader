@@ -213,6 +213,18 @@ Config.Permissions = {
         ace = 'ec_lifeinvader.teamOpen',
         default = false,
     },
+
+    --- Team-Bereiche einzeln (nil = gleiche Regel wie team)
+    --- false = für niemanden · Tabelle = wie open/post/admin (groups, jobs, ace, default)
+    teamCategories = nil,
+    teamVouchers = nil,
+    teamTicker = nil,
+    teamAds = nil,
+    teamMessages = nil,   --- nil = wie teamAds
+    teamRefunds = nil,
+    teamBlacklist = nil,
+    teamAdSlots = nil,
+    teamAdDuration = nil,
 }
 
 --[[  Permissions einschränken:
@@ -226,6 +238,19 @@ Config.Permissions = {
     admin = {
         groups = { 'admin', 'superadmin' },
         ace = 'ec_lifeinvader.admin',
+        default = false,
+    },
+    team = {
+        groups = { 'admin', 'superadmin', 'lifeinvader' },
+        default = false,
+    },
+    --- Nur Admins: Gutscheine · LifeInvader-Job: Rest
+    teamVouchers = {
+        groups = { 'admin', 'superadmin' },
+        default = false,
+    },
+    teamCategories = {
+        jobs = { 'lifeinvader' },
         default = false,
     },
 }
@@ -641,13 +666,11 @@ Config.AdDuration = {
 }
 
 --------------------------------------------------------------------------------
--- 14) Team-Panel (Admin) — nur mit Config.Permissions.team
+-- 14) Team-Panel (Admin) — Config.Permissions.team + ggf. teamCategories, teamVouchers, …
 --
---     Berechtigte sehen im Tablet einen extra Tab „Team“ / Admin-Panel:
---       • Kategorien anlegen / bearbeiten / deaktivieren
---       • Gutscheine erstellen & verwalten
---       • Anzeigen einsehen, bearbeiten, sperren, löschen
---       • Rückerstattung auf LifeInvader-Konto
+--     Berechtigte sehen im Tablet einen extra Tab „Team“ / Admin-Panel.
+--     Config.Admin.features = Bereich serverweit an/aus (Modul).
+--     Config.Permissions.team* = wer welchen Bereich nutzen darf (nil = wie team).
 --------------------------------------------------------------------------------
 
 Config.Admin = {
@@ -659,6 +682,7 @@ Config.Admin = {
         vouchers = true,
         ticker = true,
         ads = true,
+        messages = true,
         refunds = true,
         blacklist = true,
         adSlots = true,
